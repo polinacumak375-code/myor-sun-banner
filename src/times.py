@@ -1,0 +1,2 @@
+# создаётся gen_keyframes.py
+TIMES = {'DASH_DUR': 0.78, 'SUN_DUR': 5.219, 'JELLY_DUR': 6.919, 'GAZE_T0': 1.869, 'GD': 5.05, 'LOOP': 6.919, 'SPIN_T0': 2.619, 'GLOW_T0': 2.519, 'GLOW_T1': 3.719, 'NUM_T0': 5.469, 'NUM0_T0': 5.589, 'REACT_T0': 6.019, 'REACT_DUR': 0.55, 'STAR_T0': 5.269, 'LBL_T0': 6.069, 'FIRE_T0': 6.129, 'T_ENTER': 1.018, 'T_REST': 1.419, 'HOLD_T1': 3.619, 'MOVE_T1': 5.219}

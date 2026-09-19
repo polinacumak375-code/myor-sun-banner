@@ -1,0 +1,151 @@
+/* =======================================================================
+   БАННЕР 382 x 144 — статические стили
+   Слои солнышка идут снаружи внутрь: положение -> размер -> желейная
+   деформация -> отклик на нажатие -> пульсация цикла. У каждого слоя ровно
+   одна анимация, поэтому они не конфликтуют между собой.
+   ======================================================================= */
+/* Всё, что можно перекрасить, вынесено в переменные. Значения по умолчанию —
+   точные цвета макета, поэтому без настройки баннер выглядит как раньше. */
+.stage{--bg:#FF9B4E;              /* основа плашки */
+       --blob-1:#FF6934;          /* размытые пятна фона */
+       --blob-2:#FB2D26;
+       --inner-glow:#EA835F;      /* внутренняя подсветка рамки */
+       --ink:#FFF3DB;             /* кремовый: цифры, подпись, огонёк, комета */
+       --rays-1:#FFF8E9; --rays-2:#FFF3DB; --rays-3:#FDEDCC;   /* градиент лучей */
+       --glow-a:255,243,219; --glow-b:255,231,180;   /* свечение: каналы без альфы,
+          прозрачность у каждого слоя своя, поэтому цвет хранится числами */
+       /* палитры реакции. До неё баннер у всех одинаковый, поэтому это
+          отдельный набор, а не подмена основного */
+       --up-bg:#FFC25D;   --up-blob-1:#FFB047;   --up-blob-2:#FC9A3B;   --up-inner:#ECB96B;
+       --down-bg:#AE7142; --down-blob-1:#A0573D; --down-blob-2:#953E3B; --down-inner:#9F634E;
+       --to-bg:var(--bg); --to-blob-1:var(--blob-1);
+       --to-blob-2:var(--blob-2); --to-inner:var(--inner-glow);
+       --face-1:#FFFEF8; --face-2:#FFF5E0; --face-3:#FCEBC7;   /* градиент лица */
+       --radius:32px;
+       position:relative;width:382px;height:144px;border-radius:var(--radius);overflow:hidden;
+       box-shadow:0 8px 24px 0 rgba(58,29,13,.16);
+       background:var(--bg);isolation:isolate;
+       cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+
+/* размытые пятна фона (Ellipse 41 / Ellipse 40 из макета) */
+.blob{position:absolute;border-radius:50%;filter:blur(32px)}
+.b41{left:-86px;top:32px;width:251px;height:113px;background:var(--blob-1)}
+.b40{left:102px;top:-110px;width:322px;height:183px;background:var(--blob-2)}
+
+/* внутренняя подсветка рамки */
+.inner{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:9;
+       box-shadow:inset 0 0 6px 4px rgba(255,255,255,.9), inset 0 0 46px 0 var(--inner-glow)}
+
+/* ---------- что показывать ---------- */
+.stage[data-number="off"] .num,
+.stage[data-label="off"] .lbl,
+.stage[data-fire="off"] .fire,
+.stage[data-comet="off"] .dash{display:none}
+
+/* ---------- комета ---------- */
+/* голова кометы лежит в (0,0) системы viewBox, поля подобраны так, чтобы она
+   попадала ровно в точку translate; из-за этого transform-origin задан явно */
+.dash{position:absolute;left:0;top:0;width:150px;height:110px;margin:-55px 0 0 -100px;
+      will-change:transform}
+.dash-jelly{position:relative;width:100%;height:100%;transform-origin:100px 55px}
+/* голова и хвост — два наложенных слоя: хвост живёт по своей пружине.
+   оба поворачиваются вокруг головы, она лежит в 100px 55px от угла рамки */
+.dash svg{position:absolute;left:0;top:0;display:block;width:150px;height:110px;
+      overflow:visible;transform-origin:100px 55px;
+      filter:drop-shadow(0 0 6px rgba(var(--glow-b),.8))}
+
+/* ---------- солнышко ---------- */
+.sun-pos{position:absolute;left:177.99px;top:-10px;width:210.939px;height:211.072px;
+         transform-origin:50% 50%;will-change:transform}
+.sun-size,.sun-jelly,.sun-press,.sun-pulse{width:100%;height:100%;transform-origin:50% 50%}
+.sun-pulse{position:relative}
+/* svg содержит 22px запаса под свечение, поэтому он больше рамки узла на 8.61% */
+/* наклон всей фигуры из макета (Figma 1386:17452) */
+.sun-svg{position:absolute;left:-8.6096%;top:-8.6042%;width:117.2193%;height:117.2086%;
+         display:block;overflow:visible;transform:rotate(6.24deg);transform-origin:50% 50%}
+/* лучи и лицо — отдельные <svg>-слои: Safari не применяет CSS-фильтр к <g>
+   внутри svg, поэтому свечение вешаем на слой целиком; лицо остаётся без
+   свечения, иначе засветился бы зазор между лицом и лучами */
+.sun-rays{filter:drop-shadow(0 0 8.4px rgba(var(--glow-a),.55)) drop-shadow(0 0 22px rgba(var(--glow-b),.25))}
+.rays{transform-origin:0 0}
+.gaze{transform-origin:0 0}
+
+/* ---------- состояния глаз ---------- */
+/* в маске лежат все наборы сразу, показан ровно один.
+   без data-eyes и при data-eyes="auto" работает живое состояние:
+   прямоугольные глаза, которые моргают и смотрят по сторонам.
+   остальные состояния статичные — это позы из макета, им моргание не нужно */
+.eyes{display:none;transform-box:fill-box;transform-origin:50% 50%}
+.stage .eyes-bar{display:block}
+.stage[data-eyes="closed"] .eyes-bar,
+.stage[data-eyes="happy"] .eyes-bar,
+.stage[data-eyes="stars"] .eyes-bar,
+.stage[data-eyes="sad"]   .eyes-bar{display:none}
+.stage[data-eyes="closed"] .eyes-closed,
+.stage[data-eyes="happy"]  .eyes-happy,
+.stage[data-eyes="stars"]  .eyes-stars,
+.stage[data-eyes="sad"]    .eyes-sad{display:block}
+.stage[data-eyes]:not([data-eyes="auto"]) .eye,
+.stage[data-eyes]:not([data-eyes="auto"]) .gaze{animation:none}
+
+/* ---------- позы реакции ----------
+   какие позы участвуют в каком настроении и в каком порядке —
+   в src/moods.css, его пишет генератор */
+/* Ручной выбор позы сильнее реакции — им сверяют кадры с макетом.
+   Гаситель должен перебивать дорожки настроений из moods.css, поэтому он
+   специфичнее их; а чтобы выбранную позу он не гасил заодно, в правилах ниже
+   [data-eyes] продублирован — так они сравниваются с ним на равных и, идя
+   следом, побеждают. */
+.stage[data-eyes]:not([data-eyes="auto"]) .eyes{display:none;opacity:1;animation:none}
+.stage[data-eyes][data-eyes="open"] .eyes-bar,
+.stage[data-eyes][data-eyes="half"] .eyes-half,
+.stage[data-eyes][data-eyes="closed"] .eyes-closed,
+.stage[data-eyes][data-eyes="happy"] .eyes-happy,
+.stage[data-eyes][data-eyes="stars"] .eyes-stars,
+.stage[data-eyes][data-eyes="wide"] .eyes-wide,
+.stage[data-eyes][data-eyes="squint"] .eyes-squint,
+.stage[data-eyes][data-eyes="dash"] .eyes-dash,
+.stage[data-eyes][data-eyes="gem"] .eyes-gem,
+.stage[data-eyes][data-eyes="spark"] .eyes-spark,
+.stage[data-eyes][data-eyes="sad"] .eyes-sad,
+.stage[data-eyes][data-eyes="sad"] .eyes-tear{display:block;opacity:1}
+
+/* ---------- луна ----------
+   второй персонаж в том же слое: летит, растёт и пружинит по тем же дорожкам.
+   доли подобраны так, чтобы в финальном кадре фигура встала ровно в 196, 4.175
+   размером 167.14 x 207.829 — как в макете */
+.moon-svg{position:absolute;left:8.538%;top:6.716%;width:79.24%;height:98.46%;
+          display:block;overflow:visible}
+.stage[data-char="moon"] .sun-svg{display:none}
+.stage:not([data-char="moon"]) .moon-svg,
+.stage:not([data-char="moon"]) .star{display:none}
+
+/* звёздочка на ниточке — своя, не часть фигуры: она не летит вместе с луной,
+   а появляется на месте, когда луна встала. качается вокруг верха ниточки */
+.star{position:absolute;left:196px;top:35px;width:29px;height:45px;opacity:0;z-index:3;
+      transform-origin:14.25px 0}
+.star svg{display:block;width:100%;height:100%}
+
+/* ---------- текст ---------- */
+/* цифры — векторы из макета, у каждой свой наклон */
+.num{position:absolute;display:flex;align-items:center;justify-content:center;
+     transform-origin:50% 50%;opacity:0;z-index:4}
+.num i{display:block;font-style:normal}
+.num svg{display:block;width:100%;height:100%}
+/* каждая цифра растёт из центра собственной формы — transform-origin 50% 50%
+   у .num. Зелёные точки в макете (Figma 1402:16337) помечают именно это;
+   как точные координаты их брать нельзя — они в 43 px друг от друга, а центры
+   цифр в 55 px, цифры налезли бы друг на друга */
+.n2{left:36px;top:19.32px;width:58.759px;height:68.474px}
+.n2 i{width:53.259px;height:63.974px;transform:rotate(5.12deg)}
+.n0{left:97.28px;top:20.35px;width:45.776px;height:63.676px}
+.n0 i{width:43.339px;height:61.998px;transform:rotate(-2.28deg)}
+
+.lbl{position:absolute;left:37.003px;top:88px;width:116.054px;height:35.959px;
+     display:flex;align-items:center;justify-content:center;opacity:0;z-index:4}
+.lbl i{display:block;font-family:'MPLUSRounded1c',sans-serif;font-style:normal;font-weight:700;
+     font-size:13px;line-height:15px;color:var(--ink);text-align:center;width:114.641px;
+     white-space:pre-wrap;transform:rotate(-3deg)}
+/* иконка огня перед первой строкой подписи */
+.fire{position:absolute;left:34px;top:94px;width:17px;height:17px;opacity:0;z-index:5}
+.fire svg{display:block;width:100%;height:100%}

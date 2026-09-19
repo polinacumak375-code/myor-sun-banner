@@ -1,0 +1,103 @@
+<div class="stage">
+  <div class="blob b41"></div>
+  <div class="blob b40"></div>
+
+  <!-- комета: голова-капля и хвост из двух лучей с вырезом (Figma 1389:17463) -->
+  <div class="dash dash1"><div class="dash-jelly">
+    <!-- хвост — отдельный svg: он отстаёт от головы по своей, более мягкой
+         пружине, а поворот живёт на html-слое, где transform-origin считается
+         одинаково во всех движках -->
+    <svg class="dash-tail" viewBox="-100 -55 150 110" xmlns="http://www.w3.org/2000/svg">
+      <!-- задний слой: тот же силуэт крупнее и со сдвигом вперёд, из-за чего
+           по ведущему краю головы читается полумесяц -->
+      <g fill="var(--ink)" opacity=".4">
+        <path d="M-66,1 L1.4,21 L-1.1,-21 L-34,-15.5 L-22,-6.5 Z"/>
+        <circle cx="2.5" cy="2.5" r="21"/>
+      </g>
+      <!-- основной силуэт: длинный луч назад, короткий вверх, между ними вырез -->
+      <path fill="var(--ink)" d="M-51.9,0 L1.2,17.96 L-0.98,-17.97 L-26.5,-12 L-17.4,-5 Z"/>
+    </svg>
+    <svg class="dash-head" viewBox="-100 -55 150 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gComet" cx="32%" cy="26%" r="78%">
+          <stop offset="0" stop-color="var(--face-1)"/>
+          <stop offset=".6" stop-color="var(--rays-1)"/>
+          <stop offset="1" stop-color="var(--ink)"/>
+        </radialGradient>
+      </defs>
+      <circle cx="0" cy="0" r="18" fill="url(#gComet)"/>
+    </svg>
+  </div></div>
+
+  <div class="sun-pos"><div class="sun-size"><div class="sun-jelly"><div class="sun-press"><div class="sun-pulse">
+
+    <!-- слой 1: лучи — вращаются вокруг своей оси и светятся -->
+    <svg class="sun-svg sun-rays" viewBox="0 0 299.526 299.687" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- градиент задан в координатах фигуры и симметричен относительно
+             центра, поэтому вращение лучей его не «крутит» -->
+        <radialGradient id="gRays" gradientUnits="userSpaceOnUse"
+                        cx="149.763" cy="149.844" r="128">
+          <stop offset=".45" stop-color="var(--rays-1)"/>
+          <stop offset=".84" stop-color="var(--rays-2)"/>
+          <stop offset="1" stop-color="var(--rays-3)"/>
+        </radialGradient>
+      </defs>
+      <g transform="translate(149.763,149.844)">
+        <g class="rays">
+          <path transform="translate(-149.763,-149.844)" fill="url(#gRays)" d="RAYS_PATH"/>
+        </g>
+      </g>
+    </svg>
+
+    <!-- слой 2: лицо с вырезанными глазами; желейный объём — блик сверху
+         слева и мягкая тень снизу, обе внутри той же маски -->
+    <svg class="sun-svg sun-face" viewBox="0 0 299.526 299.687" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gFace" cx="36%" cy="26%" r="84%">
+          <stop offset="0" stop-color="var(--face-1)"/>
+          <stop offset=".5" stop-color="var(--face-2)"/>
+          <stop offset="1" stop-color="var(--face-3)"/>
+        </radialGradient>
+        <radialGradient id="gSpec">
+          <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
+          <stop offset=".5" stop-color="#fff" stop-opacity=".30"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gShade">
+          <stop offset="0" stop-color="#E9A268" stop-opacity=".30"/>
+          <stop offset="1" stop-color="#E9A268" stop-opacity="0"/>
+        </radialGradient>
+        <mask id="faceMask" maskUnits="userSpaceOnUse" x="0" y="0" width="299.526" height="299.687">
+          <circle cx="149.42" cy="149.85" r="70.11" fill="#fff"/>
+          EYES
+        </mask>
+      </defs>
+      <g mask="url(#faceMask)">
+        <circle cx="149.42" cy="149.85" r="70.11" fill="url(#gFace)"/>
+        <ellipse cx="152" cy="214" rx="60" ry="32" fill="url(#gShade)"/>
+        <ellipse cx="119" cy="112" rx="34" ry="20" fill="url(#gSpec)"
+                 transform="rotate(-24 119 112)"/>
+      </g>
+    </svg>
+
+    <!--<<MOON>>-->
+
+  </div></div></div></div></div>
+
+  <!-- звёздочка луны: висит на ниточке в своей точке кадра -->
+  <div class="star"><svg viewBox="0 0 29 45" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" d="STAR_PATH"/></svg></div>
+
+  <div class="num n2"><i><svg viewBox="0 0 53.2586 63.9737" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" d="DIGIT2"/></svg></i></div>
+  <div class="num n0"><i><svg viewBox="0 0 43.3392 61.998" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" fill-rule="evenodd" clip-rule="evenodd" d="DIGIT0"/></svg></i></div>
+
+  <div class="fire"><svg viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" d="FIRE"/></svg></div>
+  <div class="lbl"><i>  новый рекорд!
+ так держать</i></div>
+
+  <div class="inner"></div>
+</div>

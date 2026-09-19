@@ -1,0 +1,94 @@
+<!-- Состояния глаз из макета (Figma 1310:16477).
+     Координаты — внутри svg солнышка. Точка кадра переводится как
+     local = banner − (130, −42): в тех кадрах группа солнышка ложится в банер
+     ровно один в один (255.526 × 1.172193 = 299.53, ширина viewBox). Проверено
+     по открытым глазам — макет даёт 125.7, в коде столько же.
+     Глаза вырезаны маской, поэтому сквозь них видно фон баннера. -->
+<g class="gaze">
+
+  <!-- открытые и полуприкрытые — один и тот же прямоугольник; у полуприкрытых
+       поднят низ, верх остаётся на месте (так в макете) -->
+  <g class="eyes eyes-bar">
+    <g transform="translate(125.705,133.480) rotate(9.34)">
+      <rect class="eye" x="-6.5" y="-18" width="13" height="36" rx="6.5" fill="#000"/>
+    </g>
+    <g transform="translate(156.300,138.520) rotate(9.34)">
+      <rect class="eye" x="-6.5" y="-18" width="13" height="36" rx="6.5" fill="#000"/>
+    </g>
+  </g>
+
+  <!-- полуприкрытые: тот же прямоугольник, низ поднят. Отдельной группой —
+       в последовательностях это самостоятельный кадр -->
+  <g class="eyes eyes-half">
+    <g transform="translate(125.705,133.480) rotate(9.34)">
+      <rect x="-6.5" y="-18" width="13" height="19" rx="6.5" fill="#000"/>
+    </g>
+    <g transform="translate(156.300,138.520) rotate(9.34)">
+      <rect x="-6.5" y="-18" width="13" height="19" rx="6.5" fill="#000"/>
+    </g>
+  </g>
+
+  <!-- закрытые: в макете это не укороченный прямоугольник, а две широкие
+       чёрточки, разведённые дальше друг от друга (38.5 против 31) -->
+  <g class="eyes eyes-closed">
+    <g transform="translate(128.5,125.5) rotate(9.34)">
+      <rect x="-10.7" y="-5.85" width="21.4" height="11.7" rx="5.85" fill="#000"/>
+    </g>
+    <g transform="translate(167,133.5) rotate(9.34)">
+      <rect x="-10.7" y="-5.85" width="21.4" height="11.7" rx="5.85" fill="#000"/>
+    </g>
+  </g>
+
+  <!-- довольные: обе дуги в одном контуре -->
+  <g class="eyes eyes-happy">
+    <path transform="translate(119.564,113.347)" fill="#000" d="HAPPY_PATH"/>
+  </g>
+
+  <!-- звёздочки: один контур, поставлен дважды -->
+  <g class="eyes eyes-stars">
+    <path transform="translate(106.045,110.169)" fill="#000" d="STAR_PATH"/>
+    <path transform="translate(134.045,120.669)" fill="#000" d="STAR_PATH"/>
+  </g>
+
+  <!-- плачущие: тот же контур зеркально, и слеза под правым глазом.
+       слеза вынесена отдельно — в печальной реакции она набегает позже -->
+  <g class="eyes eyes-sad">
+    <path transform="translate(130.6,112) scale(-1,1)" fill="#000" d="SAD_PATH"/>
+    <path transform="translate(139,115)" fill="#000" d="SAD_PATH"/>
+  </g>
+  <g class="eyes eyes-tear">
+    <path transform="translate(156,150)" fill="#000" d="TEAR_PATH"/>
+  </g>
+
+  <!-- ====== позы реакции (Figma 1380:17010) ======
+       солнышко замечает число: глаза округляются, потом щурятся и
+       превращаются в искры. Размеры и места сняты по кадрам раскадровки. -->
+
+  <!-- 2: округлились -->
+  <g class="eyes eyes-wide">
+    <rect x="118" y="124" width="15.424" height="17.898" rx="7.712" fill="#000"/>
+    <rect x="149" y="129.04" width="15.424" height="17.898" rx="7.712" fill="#000"/>
+  </g>
+
+  <!-- 3: прищурились -->
+  <g class="eyes eyes-squint">
+    <rect x="119.7" y="127" width="14.256" height="10.793" rx="5.397" fill="#000"/>
+    <rect x="150.7" y="132.04" width="14.256" height="10.793" rx="5.397" fill="#000"/>
+  </g>
+
+  <!-- 4: сузились в чёрточки; контур в макете растянут по вертикали,
+       поэтому масштаб по осям разный -->
+  <g class="eyes eyes-dash">
+    <g transform="translate(119,127) scale(1.0066,1.818)"><path fill="#000" d="WINK_PATH"/></g>
+  </g>
+
+  <!-- 5 и 6: искры. Контур снят вместе с диском лица, поэтому кладём его
+       в тот же угол диска — (79.285, 79.743) -->
+  <g class="eyes eyes-gem">
+    <g transform="translate(79.285,79.743)"><path fill="#000" fill-rule="evenodd" d="GEM_PATH"/></g>
+  </g>
+  <g class="eyes eyes-spark">
+    <g transform="translate(79.285,79.743)"><path fill="#000" fill-rule="evenodd" d="SPARK_PATH"/></g>
+  </g>
+
+</g>

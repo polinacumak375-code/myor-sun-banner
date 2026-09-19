@@ -1,0 +1,41 @@
+/* ======================= привязка анимаций =======================
+   Времена подставляет build.py из src/times.py — их считает генератор
+   по длине траектории, руками править не нужно.
+
+   Вступление проигрывается один раз, дальше идёт бесконечный цикл.
+   Переключение без JS: цикловая анимация стоит в списке последней и
+   с задержкой — до её старта она не участвует, после старта побеждает. */
+
+.stage .dash1{animation:dashFly {DASH_DUR}s linear both}
+.stage .dash1 .dash-jelly{animation:dashJelly {DASH_DUR}s linear both}
+.stage .dash1 .dash-tail{animation:dashJellyTail {DASH_DUR}s linear both}
+
+.stage .sun-pos {animation:sunPath {SUN_DUR}s linear both}
+.stage .sun-size{animation:sunSize {SUN_DUR}s linear both}
+.stage .sun-jelly{animation:sunJelly {JELLY_DUR}s linear both,
+                            jellyIdle 4.4s {LOOP}s ease-in-out infinite}
+.stage .sun-pulse{animation:sunPulse 4.4s {LOOP}s ease-in-out infinite}
+.stage .sun-press.press{animation:sunPress .74s cubic-bezier(.2,.75,.35,1)}
+
+.stage .rays{animation:rayspin 16s {SPIN_T0}s linear infinite}
+.stage .sun-rays{animation:glowIn 1.2s {GLOW_T0}s ease-out both,
+                           glowBreath 3.6s {GLOW_T1}s ease-in-out infinite}
+
+.stage .gaze{animation:gazeIntro {GD}s {GAZE_T0}s both, gazeLoop 4.4s {LOOP}s infinite}
+.stage .eye {animation:blinkIntro {GD}s {GAZE_T0}s both, blinkLoop 4.4s {LOOP}s infinite}
+
+.stage .n2{animation:digitIn .52s {NUM_T0}s linear both,
+                     digitIdle2 4.4s {LOOP}s ease-in-out infinite}
+.stage .n0{animation:digitIn .52s {NUM0_T0}s linear both,
+                     digitIdle0 4.4s {LOOP}s ease-in-out infinite}
+.stage .star{animation:starIn .62s {STAR_T0}s cubic-bezier(.3,.8,.4,1) both,
+                       starSwing 4.4s {LOOP}s ease-in-out infinite}
+.stage .lbl{animation:lblIn .4s {LBL_T0}s linear both,
+                      lblPulse 4.4s {LOOP}s ease-in-out infinite}
+.stage .fire{animation:fireIn .34s {FIRE_T0}s linear both,
+                       lblPulse 4.4s {LOOP}s ease-in-out infinite}
+
+@media (prefers-reduced-motion:reduce){
+  .stage *{animation-duration:.001s!important;animation-delay:0s!important;
+           animation-iteration-count:1!important}
+}

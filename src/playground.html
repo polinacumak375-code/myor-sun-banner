@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MYOR — конструктор баннера</title>
+<style>
+/*<<FONTS>>*/
+
+/* ---------- страница-конструктор (в продакшн не нужна) ---------- */
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;background:#F4F1EC;color:#6B5A50;
+     font-family:'MPLUSRounded1c',system-ui,sans-serif;font-size:13px;
+     display:flex;justify-content:center;padding:32px 20px 64px}
+.wrap{display:flex;gap:44px;align-items:flex-start;flex-wrap:wrap}
+.stagecol{display:flex;flex-direction:column;gap:30px;align-items:center;position:sticky;top:32px}
+.cap{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin-bottom:8px;text-align:center}
+.zoom-box{width:764px;height:288px;position:relative}
+.zoom-box .stage{position:absolute;left:0;top:0;transform:scale(2);transform-origin:0 0}
+
+.panel{width:300px;display:flex;flex-direction:column;gap:24px}
+h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:inherit;font-weight:700;font-size:12px;border:1px solid #DED5CB;
+     background:#FBF8F4;color:#6B5A50;border-radius:999px;padding:7px 14px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:#FF6934;border-color:#FF6934;color:#FFF3DB}
+.row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.row label{flex:1;cursor:pointer}
+.row input[type=range]{flex:1;accent-color:#FF6934}
+.row output{width:46px;text-align:right;font-variant-numeric:tabular-nums;opacity:.65}
+.checks{display:flex;flex-wrap:wrap;gap:8px 16px}
+.checks label{display:flex;align-items:center;gap:6px;cursor:pointer}
+input[type=checkbox]{accent-color:#FF6934;width:15px;height:15px}
+.colors{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.colors label{display:flex;align-items:center;gap:8px;cursor:pointer}
+input[type=color]{width:30px;height:24px;padding:0;border:1px solid #DED5CB;border-radius:6px;
+     background:none;cursor:pointer}
+textarea{width:100%;height:52px;resize:vertical;font:inherit;font-size:12px;line-height:1.35;
+     border:1px solid #DED5CB;border-radius:10px;padding:8px 10px;background:#FBF8F4;color:inherit}
+pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1.5;
+     white-space:pre-wrap;background:#FBF8F4;border:1px solid #DED5CB;border-radius:10px;
+     padding:10px 12px;color:#6B5A50;max-height:180px;overflow:auto}
+button.act{font:inherit;font-weight:700;border:0;border-radius:999px;padding:10px 20px;cursor:pointer;
+     background:#FF6934;color:#FFF3DB;box-shadow:0 4px 12px rgba(255,105,52,.35)}
+button.act.ghost{background:#FBF8F4;color:#6B5A50;border:1px solid #DED5CB;box-shadow:none;
+     font-weight:400;padding:8px 16px}
+button.act:active{transform:translateY(1px)}
+.hint{opacity:.6;line-height:1.5;margin-top:10px}
+details{border-top:1px solid #E4DCD2;padding-top:18px}
+summary{cursor:pointer;font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.5;
+     list-style:none;margin-bottom:4px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'▸ '}
+details[open] summary::before{content:'▾ '}
+details .sub{margin-top:18px}
+/*<<CSS>>*/</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="stagecol">
+    <div><p class="cap">1 : 1 — 382 × 144</p><div class="banner-host"></div></div>
+    <div><p class="cap">× 2</p><div class="zoom-box"><div class="banner-host"></div></div></div>
+  </div>
+
+  <div class="panel">
+
+    <div>
+      <h2>Персонаж</h2>
+      <div class="chips" id="char"></div>
+    </div>
+
+    <div>
+      <h2>Эмоция</h2>
+      <div class="chips" id="mood"></div>
+      <p class="hint">Начало у всех одинаковое. Солнышко меняется в лице только
+      после того, как появились цифры: глаза перетекают в выбранное состояние,
+      а фон уходит в светлую или тёмную палитру. Нажми эмоцию — покажет сразу.</p>
+    </div>
+
+    <div>
+      <h2>Анимация</h2>
+      <button class="act" id="replay">↻ Проиграть целиком</button>
+      <div class="row"><label for="speed">Скорость</label>
+        <input type="range" id="speed" min="0.2" max="2" step="0.05" value="1">
+        <output id="speedv">×1</output></div>
+    </div>
+
+    <div>
+      <h2>Что показывать</h2>
+      <div class="checks">
+        <label><input type="checkbox" id="p-number" checked> число</label>
+        <label><input type="checkbox" id="p-label" checked> подпись</label>
+        <label><input type="checkbox" id="p-fire" checked> огонёк</label>
+        <label><input type="checkbox" id="p-comet" checked> комета</label>
+      </div>
+      <div class="row"><textarea id="labelText">  новый рекорд!
+ так держать</textarea></div>
+    </div>
+
+    <div>
+      <h2>Тема</h2>
+      <div class="chips" id="presets"></div>
+    </div>
+
+    <details>
+      <summary>Тонкая настройка</summary>
+
+      <div class="sub">
+        <h2>Поза глаз — для сверки с макетом</h2>
+        <div class="chips" id="eyes"></div>
+        <p class="hint">Любая, кроме «из реакции», фиксирует кадр и глушит эмоцию.</p>
+      </div>
+
+      <div class="sub">
+        <h2>Режим</h2>
+        <div class="chips" id="mode"></div>
+        <div class="row"><label for="press"><input type="checkbox" id="press" checked> отклик на нажатие</label></div>
+      </div>
+
+      <div class="sub">
+        <h2>Цвета</h2>
+        <div class="colors">
+          <label><input type="color" id="c-bg" value="#ff9b4e"> основа</label>
+          <label><input type="color" id="c-inner-glow" value="#ea835f"> рамка</label>
+          <label><input type="color" id="c-blob-1" value="#ff6934"> пятно 1</label>
+          <label><input type="color" id="c-blob-2" value="#fb2d26"> пятно 2</label>
+          <label><input type="color" id="c-ink" value="#fff3db"> кремовый</label>
+          <label><input type="color" id="c-up-bg" value="#ffc25d"> светлая</label>
+          <label><input type="color" id="c-down-bg" value="#ae7142"> тёмная</label>
+        </div>
+        <div class="row"><label for="radius">Скругление</label>
+          <input type="range" id="radius" min="0" max="72" step="1" value="32">
+          <output id="radiusv">32</output></div>
+        <p class="hint">«Светлая» и «тёмная» — куда уходит фон по эмоции.
+        Градиенты лучей, лица и свечения считаются от кремового.</p>
+      </div>
+
+      <div class="sub">
+        <h2>Готовый вызов</h2>
+        <pre id="code"></pre>
+        <div class="row"><button class="act ghost" id="copy">Скопировать</button></div>
+      </div>
+
+    </details>
+
+  </div>
+</div>
+
+<template id="tpl">
+<!--<<STAGE>>-->
+</template>
+
+<script>
+/*<<BANNER_JS>>*/
+
+/* ---------------------------------------------------------------- состояние */
+var CHARS = [['sun', 'солнышко'], ['moon', 'луна']];
+var MOODS = [['spark', 'восторг'], ['stars', 'звёздочки'], ['happy', 'довольные'],
+             ['half', 'полуприкрытые'], ['closed', 'закрытые'], ['sad', 'плачущие'],
+             ['none', 'без реакции']];
+var EYES = [['auto', 'из реакции'], ['open', 'открытые'], ['wide', 'округлились'],
+            ['squint', 'прищур'], ['dash', 'чёрточки'], ['gem', 'ромбики'],
+            ['spark', 'искры'], ['half', 'полуприкрытые'], ['closed', 'закрытые'],
+            ['happy', 'довольные'], ['stars', 'звёздочки'], ['sad', 'плачущие']];
+var MODES = [['intro', 'со вступления'], ['loop', 'сразу цикл'], ['static', 'стоп-кадр']];
+
+/* Оттенки градиентов держатся на тех же расстояниях от кремового, что в макете,
+   поэтому одной пипеткой перекрашивается всё солнышко разом. */
+var TONES = {'rays-1': [0, 5, 14], 'rays-2': [0, 0, 0], 'rays-3': [-2, -6, -15],
+             'face-1': [0, 11, 29], 'face-2': [0, 2, 5], 'face-3': [-3, -8, -20]};
+/* Палитра эмоции — так же от одной пипетки: пятна и рамка идут от неё теми же
+   шагами, что между цветами макета. */
+var MOOD_STEPS = {'blob-1': [0, -18, -22], 'blob-2': [-3, -40, -34], 'inner': [-19, -9, 14]};
+
+var state = {char: 'sun', mood: 'spark', eyes: 'auto', mode: 'intro', speed: 1, press: true,
+             number: true, label: true, fire: true, comet: true,
+             labelText: null, colors: {}};
+var banners = [];
+
+function hex(v) {
+  v = Math.max(0, Math.min(255, Math.round(v)));
+  return ('0' + v.toString(16)).slice(-2);
+}
+function rgb(h) {
+  return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+}
+function shift(base, d) {
+  return '#' + hex(base[0] + d[0]) + hex(base[1] + d[1]) + hex(base[2] + d[2]);
+}
+function tones(ink) {
+  var c = rgb(ink), out = {ink: ink};
+  for (var k in TONES) out[k] = shift(c, TONES[k]);
+  // свечение хранится каналами: прозрачность у каждого слоя своя
+  out['glow-a'] = c.join(',');
+  out['glow-b'] = [c[0], Math.max(0, c[1] - 12), Math.max(0, c[2] - 39)].join(',');
+  return out;
+}
+function moodTones(side, v) {
+  var c = rgb(v), m = {};
+  m[side + '-bg'] = v;
+  for (var k in MOOD_STEPS) m[side + '-' + k] = shift(c, MOOD_STEPS[k]);
+  return m;
+}
+
+function apply(opts) {
+  for (var k in opts) if (k !== 'colors') state[k] = opts[k];
+  banners.forEach(function (b) { b.set(opts); });
+  showCode();
+}
+function setColors(map) {
+  for (var k in map) state.colors[k] = map[k];
+  banners.forEach(function (b) { b.set({colors: map}); });
+  showCode();
+}
+
+/* ---------------------------------------------------------------- элементы */
+function chips(box, items, key, after) {
+  var el = document.getElementById(box);
+  items.forEach(function (it) {
+    var b = document.createElement('button');
+    b.textContent = it[1];
+    b.setAttribute('aria-pressed', state[key] === it[0]);
+    b.onclick = function () {
+      var o = {};
+      o[key] = it[0];
+      apply(o);
+      if (after) after();
+      el.querySelectorAll('button').forEach(function (x) {
+        x.setAttribute('aria-pressed', x === b);
+      });
+    };
+    el.appendChild(b);
+  });
+}
+/* сменили эмоцию — отматываем к реакции, иначе ждать её шесть секунд */
+/* сменили персонажа — подставляем его палитру из макета */
+chips('char', CHARS, 'char', function () { useTheme(CHAR_THEME[state.char]); });
+chips('mood', MOODS, 'mood', function () {
+  if (state.mode !== 'static') {
+    banners.forEach(function (b) { b.seek(MyorBanner.REACT - 0.35); });
+  }
+});
+chips('eyes', EYES, 'eyes');
+chips('mode', MODES, 'mode');
+
+function onCheck(id, key) {
+  document.getElementById(id).onchange = function () {
+    var o = {};
+    o[key] = this.checked;
+    apply(o);
+  };
+}
+onCheck('p-number', 'number');
+onCheck('p-label', 'label');
+onCheck('p-fire', 'fire');
+onCheck('p-comet', 'comet');
+onCheck('press', 'press');
+
+document.getElementById('speed').oninput = function () {
+  document.getElementById('speedv').textContent = '×' + (+this.value).toFixed(2);
+  apply({speed: +this.value});
+};
+document.getElementById('radius').oninput = function () {
+  document.getElementById('radiusv').textContent = this.value;
+  setColors({radius: this.value + 'px'});
+};
+document.getElementById('labelText').oninput = function () {
+  apply({labelText: this.value});
+};
+['bg', 'inner-glow', 'blob-1', 'blob-2'].forEach(function (n) {
+  document.getElementById('c-' + n).oninput = function () {
+    var m = {};
+    m[n] = this.value;
+    setColors(m);
+  };
+});
+document.getElementById('c-ink').oninput = function () { setColors(tones(this.value)); };
+['up', 'down'].forEach(function (side) {
+  document.getElementById('c-' + side + '-bg').oninput = function () {
+    setColors(moodTones(side, this.value));
+  };
+});
+
+document.getElementById('replay').onclick = function () {
+  banners.forEach(function (b) { b.replay(); });
+};
+
+/* ---------------------------------------------------------------- темы */
+/* У каждого персонажа своя палитра из макета — она же тема по умолчанию. */
+var CHAR_THEME = {sun: 'из макета', moon: 'луна'};
+var PRESETS = {
+  'из макета': {bg: '#ff9b4e', 'inner-glow': '#ea835f', 'blob-1': '#ff6934', 'blob-2': '#fb2d26',
+                ink: '#fff3db', up: '#ffc25d', down: '#ae7142'},
+  'луна':      {bg: '#c8dbfc', 'inner-glow': '#3174e9', 'blob-1': '#065bca', 'blob-2': '#1a3fd3',
+                ink: '#dbeeff', up: '#7fd4ff', down: '#1b2a6b'},
+  'ночь':      {bg: '#2e3566', 'inner-glow': '#6c7bc9', 'blob-1': '#3b4a8f', 'blob-2': '#1b1f44',
+                ink: '#fff1d0', up: '#5a6bc0', down: '#1d2140'},
+  'мята':      {bg: '#4fc3a1', 'inner-glow': '#8fe0c6', 'blob-1': '#2fa88a', 'blob-2': '#127a63',
+                ink: '#fffbea', up: '#7fe0bf', down: '#2d6b5b'},
+  'ягода':     {bg: '#e05b8a', 'inner-glow': '#f3a0be', 'blob-1': '#c8417a', 'blob-2': '#8e1e55',
+                ink: '#fff0f3', up: '#ff8fb4', down: '#7a3552'}
+};
+var pbox = document.getElementById('presets');
+function useTheme(name) {
+  var p = PRESETS[name], all = tones(p.ink), k;
+  ['bg', 'inner-glow', 'blob-1', 'blob-2'].forEach(function (n) {
+    all[n] = p[n];
+    document.getElementById('c-' + n).value = p[n];
+  });
+  var u = moodTones('up', p.up), d = moodTones('down', p.down);
+  for (k in u) all[k] = u[k];
+  for (k in d) all[k] = d[k];
+  document.getElementById('c-ink').value = p.ink;
+  document.getElementById('c-up-bg').value = p.up;
+  document.getElementById('c-down-bg').value = p.down;
+  setColors(all);
+  pbox.querySelectorAll('button').forEach(function (x) {
+    x.setAttribute('aria-pressed', x.textContent === name);
+  });
+}
+Object.keys(PRESETS).forEach(function (name) {
+  var b = document.createElement('button');
+  b.textContent = name;
+  b.setAttribute('aria-pressed', name === 'из макета');
+  b.onclick = function () { useTheme(name); };
+  pbox.appendChild(b);
+});
+
+/* ---------------------------------------------------------------- вывод */
+function showCode() {
+  var s = state, c = s.colors, keys = Object.keys(c);
+  var lines = ['MyorBanner.mount(host, {',
+    "  char: '" + s.char + "', mood: '" + s.mood + "', speed: " + s.speed + ','];
+  if (s.eyes !== 'auto') lines.push("  eyes: '" + s.eyes + "',");
+  if (s.mode !== 'intro') lines.push("  mode: '" + s.mode + "',");
+  lines.push('  number: ' + s.number + ', label: ' + s.label +
+             ', fire: ' + s.fire + ', comet: ' + s.comet + ',');
+  if (s.labelText != null) lines.push('  labelText: ' + JSON.stringify(s.labelText) + ',');
+  if (keys.length) {
+    lines.push('  colors: {');
+    keys.forEach(function (k, i) {
+      lines.push("    '" + k + "': '" + c[k] + "'" + (i < keys.length - 1 ? ',' : ''));
+    });
+    lines.push('  }');
+  }
+  lines.push('});');
+  document.getElementById('code').textContent = lines.join('\n');
+}
+
+document.getElementById('copy').onclick = function () {
+  var btn = document.getElementById('copy'), was = btn.textContent;
+  navigator.clipboard.writeText(document.getElementById('code').textContent).then(function () {
+    btn.textContent = 'Скопировано';
+    setTimeout(function () { btn.textContent = was; }, 1200);
+  });
+};
+
+document.querySelectorAll('.banner-host').forEach(function (h) {
+  banners.push(MyorBanner.mount(h, state));
+});
+showCode();
+</script>
+</body>
+</html>

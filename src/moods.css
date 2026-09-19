@@ -1,0 +1,54 @@
+/* создаётся gen_keyframes.py — руками не править */
+.stage[data-mood="spark"],
+.stage[data-mood="stars"],
+.stage[data-mood="happy"]{--to-bg:var(--up-bg); --to-blob-1:var(--up-blob-1);
+   --to-blob-2:var(--up-blob-2); --to-inner:var(--up-inner)}
+.stage[data-mood="half"],
+.stage[data-mood="closed"],
+.stage[data-mood="sad"]{--to-bg:var(--down-bg); --to-blob-1:var(--down-blob-1);
+   --to-blob-2:var(--down-blob-2); --to-inner:var(--down-inner)}
+.stage[data-mood="spark"],
+.stage[data-mood="stars"],
+.stage[data-mood="happy"],
+.stage[data-mood="half"],
+.stage[data-mood="closed"],
+.stage[data-mood="sad"]{animation:bgTo .7s 6.019s ease-out both}
+.stage[data-mood="spark"] .b41,
+.stage[data-mood="stars"] .b41,
+.stage[data-mood="happy"] .b41,
+.stage[data-mood="half"] .b41,
+.stage[data-mood="closed"] .b41,
+.stage[data-mood="sad"] .b41{animation:blob1To .7s 6.019s ease-out both}
+.stage[data-mood="spark"] .b40,
+.stage[data-mood="stars"] .b40,
+.stage[data-mood="happy"] .b40,
+.stage[data-mood="half"] .b40,
+.stage[data-mood="closed"] .b40,
+.stage[data-mood="sad"] .b40{animation:blob2To .7s 6.019s ease-out both}
+.stage[data-mood="spark"] .inner,
+.stage[data-mood="stars"] .inner,
+.stage[data-mood="happy"] .inner,
+.stage[data-mood="half"] .inner,
+.stage[data-mood="closed"] .inner,
+.stage[data-mood="sad"] .inner{animation:innerTo .7s 6.019s ease-out both}
+/* после реакции взгляд по сторонам выключен: он возил бы позу вбок */
+.stage[data-mood="spark"] .gaze,
+.stage[data-mood="stars"] .gaze,
+.stage[data-mood="happy"] .gaze,
+.stage[data-mood="half"] .gaze,
+.stage[data-mood="closed"] .gaze,
+.stage[data-mood="sad"] .gaze{animation:gazeIntro 5.05s 1.869s both}
+/* позы: выкладываем нужные и отдаём порядок дорожкам */
+.stage[data-mood="spark"] .eyes-bar{display:block;animation:sparkBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="spark"] .eyes-spark{display:block;animation:sparkSpark 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="stars"] .eyes-bar{display:block;animation:starsBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="stars"] .eyes-stars{display:block;animation:starsStars 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="happy"] .eyes-bar{display:block;animation:happyBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="happy"] .eyes-happy{display:block;animation:happyHappy 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="half"] .eyes-bar{display:block;animation:halfBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="half"] .eyes-half{display:block;animation:halfHalf 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="closed"] .eyes-bar{display:block;animation:closedBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="closed"] .eyes-closed{display:block;animation:closedClosed 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="sad"] .eyes-bar{display:block;animation:sadBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="sad"] .eyes-sad{display:block;animation:sadSad 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="sad"] .eyes-tear{display:block;animation:sadTear 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}

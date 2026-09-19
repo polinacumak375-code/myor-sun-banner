@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MYOR — баннер «Солнышко»</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;display:grid;place-items:center;background:transparent}
+/* ---------- fonts ---------- */
+@font-face{font-family:'Retro Wild';src:url('fonts/RetroWildRegular.ttf') format('truetype');font-weight:400;font-display:block}
+@font-face{font-family:'MPLUSRounded1c';src:url('fonts/MPLUSRounded1c-Bold.ttf') format('truetype');font-weight:700;font-display:block}
+
+/* =======================================================================
+   БАННЕР 382 x 144 — статические стили
+   Слои солнышка идут снаружи внутрь: положение -> размер -> желейная
+   деформация -> отклик на нажатие -> пульсация цикла. У каждого слоя ровно
+   одна анимация, поэтому они не конфликтуют между собой.
+   ======================================================================= */
+/* Всё, что можно перекрасить, вынесено в переменные. Значения по умолчанию —
+   точные цвета макета, поэтому без настройки баннер выглядит как раньше. */
+.stage{--bg:#FF9B4E;              /* основа плашки */
+       --blob-1:#FF6934;          /* размытые пятна фона */
+       --blob-2:#FB2D26;
+       --inner-glow:#EA835F;      /* внутренняя подсветка рамки */
+       --ink:#FFF3DB;             /* кремовый: цифры, подпись, огонёк, комета */
+       --rays-1:#FFF8E9; --rays-2:#FFF3DB; --rays-3:#FDEDCC;   /* градиент лучей */
+       --glow-a:255,243,219; --glow-b:255,231,180;   /* свечение: каналы без альфы,
+          прозрачность у каждого слоя своя, поэтому цвет хранится числами */
+       /* палитры реакции. До неё баннер у всех одинаковый, поэтому это
+          отдельный набор, а не подмена основного */
+       --up-bg:#FFC25D;   --up-blob-1:#FFB047;   --up-blob-2:#FC9A3B;   --up-inner:#ECB96B;
+       --down-bg:#AE7142; --down-blob-1:#A0573D; --down-blob-2:#953E3B; --down-inner:#9F634E;
+       --to-bg:var(--bg); --to-blob-1:var(--blob-1);
+       --to-blob-2:var(--blob-2); --to-inner:var(--inner-glow);
+       --face-1:#FFFEF8; --face-2:#FFF5E0; --face-3:#FCEBC7;   /* градиент лица */
+       --radius:32px;
+       position:relative;width:382px;height:144px;border-radius:var(--radius);overflow:hidden;
+       box-shadow:0 8px 24px 0 rgba(58,29,13,.16);
+       background:var(--bg);isolation:isolate;
+       cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+
+/* размытые пятна фона (Ellipse 41 / Ellipse 40 из макета) */
+.blob{position:absolute;border-radius:50%;filter:blur(32px)}
+.b41{left:-86px;top:32px;width:251px;height:113px;background:var(--blob-1)}
+.b40{left:102px;top:-110px;width:322px;height:183px;background:var(--blob-2)}
+
+/* внутренняя подсветка рамки */
+.inner{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:9;
+       box-shadow:inset 0 0 6px 4px rgba(255,255,255,.9), inset 0 0 46px 0 var(--inner-glow)}
+
+/* ---------- что показывать ---------- */
+.stage[data-number="off"] .num,
+.stage[data-label="off"] .lbl,
+.stage[data-fire="off"] .fire,
+.stage[data-comet="off"] .dash{display:none}
+
+/* ---------- комета ---------- */
+/* голова кометы лежит в (0,0) системы viewBox, поля подобраны так, чтобы она
+   попадала ровно в точку translate; из-за этого transform-origin задан явно */
+.dash{position:absolute;left:0;top:0;width:150px;height:110px;margin:-55px 0 0 -100px;
+      will-change:transform}
+.dash-jelly{position:relative;width:100%;height:100%;transform-origin:100px 55px}
+/* голова и хвост — два наложенных слоя: хвост живёт по своей пружине.
+   оба поворачиваются вокруг головы, она лежит в 100px 55px от угла рамки */
+.dash svg{position:absolute;left:0;top:0;display:block;width:150px;height:110px;
+      overflow:visible;transform-origin:100px 55px;
+      filter:drop-shadow(0 0 6px rgba(var(--glow-b),.8))}
+
+/* ---------- солнышко ---------- */
+.sun-pos{position:absolute;left:177.99px;top:-10px;width:210.939px;height:211.072px;
+         transform-origin:50% 50%;will-change:transform}
+.sun-size,.sun-jelly,.sun-press,.sun-pulse{width:100%;height:100%;transform-origin:50% 50%}
+.sun-pulse{position:relative}
+/* svg содержит 22px запаса под свечение, поэтому он больше рамки узла на 8.61% */
+/* наклон всей фигуры из макета (Figma 1386:17452) */
+.sun-svg{position:absolute;left:-8.6096%;top:-8.6042%;width:117.2193%;height:117.2086%;
+         display:block;overflow:visible;transform:rotate(6.24deg);transform-origin:50% 50%}
+/* лучи и лицо — отдельные <svg>-слои: Safari не применяет CSS-фильтр к <g>
+   внутри svg, поэтому свечение вешаем на слой целиком; лицо остаётся без
+   свечения, иначе засветился бы зазор между лицом и лучами */
+.sun-rays{filter:drop-shadow(0 0 8.4px rgba(var(--glow-a),.55)) drop-shadow(0 0 22px rgba(var(--glow-b),.25))}
+.rays{transform-origin:0 0}
+.gaze{transform-origin:0 0}
+
+/* ---------- состояния глаз ---------- */
+/* в маске лежат все наборы сразу, показан ровно один.
+   без data-eyes и при data-eyes="auto" работает живое состояние:
+   прямоугольные глаза, которые моргают и смотрят по сторонам.
+   остальные состояния статичные — это позы из макета, им моргание не нужно */
+.eyes{display:none;transform-box:fill-box;transform-origin:50% 50%}
+.stage .eyes-bar{display:block}
+.stage[data-eyes="closed"] .eyes-bar,
+.stage[data-eyes="happy"] .eyes-bar,
+.stage[data-eyes="stars"] .eyes-bar,
+.stage[data-eyes="sad"]   .eyes-bar{display:none}
+.stage[data-eyes="closed"] .eyes-closed,
+.stage[data-eyes="happy"]  .eyes-happy,
+.stage[data-eyes="stars"]  .eyes-stars,
+.stage[data-eyes="sad"]    .eyes-sad{display:block}
+.stage[data-eyes]:not([data-eyes="auto"]) .eye,
+.stage[data-eyes]:not([data-eyes="auto"]) .gaze{animation:none}
+
+/* ---------- позы реакции ----------
+   какие позы участвуют в каком настроении и в каком порядке —
+   в src/moods.css, его пишет генератор */
+/* Ручной выбор позы сильнее реакции — им сверяют кадры с макетом.
+   Гаситель должен перебивать дорожки настроений из moods.css, поэтому он
+   специфичнее их; а чтобы выбранную позу он не гасил заодно, в правилах ниже
+   [data-eyes] продублирован — так они сравниваются с ним на равных и, идя
+   следом, побеждают. */
+.stage[data-eyes]:not([data-eyes="auto"]) .eyes{display:none;opacity:1;animation:none}
+.stage[data-eyes][data-eyes="open"] .eyes-bar,
+.stage[data-eyes][data-eyes="half"] .eyes-half,
+.stage[data-eyes][data-eyes="closed"] .eyes-closed,
+.stage[data-eyes][data-eyes="happy"] .eyes-happy,
+.stage[data-eyes][data-eyes="stars"] .eyes-stars,
+.stage[data-eyes][data-eyes="wide"] .eyes-wide,
+.stage[data-eyes][data-eyes="squint"] .eyes-squint,
+.stage[data-eyes][data-eyes="dash"] .eyes-dash,
+.stage[data-eyes][data-eyes="gem"] .eyes-gem,
+.stage[data-eyes][data-eyes="spark"] .eyes-spark,
+.stage[data-eyes][data-eyes="sad"] .eyes-sad,
+.stage[data-eyes][data-eyes="sad"] .eyes-tear{display:block;opacity:1}
+
+/* ---------- луна ----------
+   второй персонаж в том же слое: летит, растёт и пружинит по тем же дорожкам.
+   доли подобраны так, чтобы в финальном кадре фигура встала ровно в 196, 4.175
+   размером 167.14 x 207.829 — как в макете */
+.moon-svg{position:absolute;left:8.538%;top:6.716%;width:79.24%;height:98.46%;
+          display:block;overflow:visible}
+.stage[data-char="moon"] .sun-svg{display:none}
+.stage:not([data-char="moon"]) .moon-svg,
+.stage:not([data-char="moon"]) .star{display:none}
+
+/* звёздочка на ниточке — своя, не часть фигуры: она не летит вместе с луной,
+   а появляется на месте, когда луна встала. качается вокруг верха ниточки */
+.star{position:absolute;left:196px;top:35px;width:29px;height:45px;opacity:0;z-index:3;
+      transform-origin:14.25px 0}
+.star svg{display:block;width:100%;height:100%}
+
+/* ---------- текст ---------- */
+/* цифры — векторы из макета, у каждой свой наклон */
+.num{position:absolute;display:flex;align-items:center;justify-content:center;
+     transform-origin:50% 50%;opacity:0;z-index:4}
+.num i{display:block;font-style:normal}
+.num svg{display:block;width:100%;height:100%}
+/* каждая цифра растёт из центра собственной формы — transform-origin 50% 50%
+   у .num. Зелёные точки в макете (Figma 1402:16337) помечают именно это;
+   как точные координаты их брать нельзя — они в 43 px друг от друга, а центры
+   цифр в 55 px, цифры налезли бы друг на друга */
+.n2{left:36px;top:19.32px;width:58.759px;height:68.474px}
+.n2 i{width:53.259px;height:63.974px;transform:rotate(5.12deg)}
+.n0{left:97.28px;top:20.35px;width:45.776px;height:63.676px}
+.n0 i{width:43.339px;height:61.998px;transform:rotate(-2.28deg)}
+
+.lbl{position:absolute;left:37.003px;top:88px;width:116.054px;height:35.959px;
+     display:flex;align-items:center;justify-content:center;opacity:0;z-index:4}
+.lbl i{display:block;font-family:'MPLUSRounded1c',sans-serif;font-style:normal;font-weight:700;
+     font-size:13px;line-height:15px;color:var(--ink);text-align:center;width:114.641px;
+     white-space:pre-wrap;transform:rotate(-3deg)}
+/* иконка огня перед первой строкой подписи */
+.fire{position:absolute;left:34px;top:94px;width:17px;height:17px;opacity:0;z-index:5}
+.fire svg{display:block;width:100%;height:100%}
+
+/* ---- солнышко: возврат снизу по траектории из макета, пауза, уход вправо ---- */
+@keyframes sunPath{
+  0.0%{transform:translate(24.36px,156.04px);opacity:0.00}
+  14.583%{transform:translate(24.36px,156.04px);opacity:0.00}
+  15.0%{transform:translate(21.18px,156.99px);opacity:1.00}
+  15.417%{transform:translate(-1.40px,161.02px);opacity:1.00}
+  15.833%{transform:translate(-24.32px,160.38px);opacity:1.00}
+  16.25%{transform:translate(-46.53px,154.71px);opacity:1.00}
+  16.667%{transform:translate(-66.02px,144.28px);opacity:1.00}
+  17.083%{transform:translate(-81.18px,130.59px);opacity:1.00}
+  17.5%{transform:translate(-92.01px,115.19px);opacity:1.00}
+  17.917%{transform:translate(-99.13px,99.44px);opacity:1.00}
+  18.333%{transform:translate(-103.72px,84.32px);opacity:1.00}
+  18.75%{transform:translate(-106.01px,70.12px);opacity:1.00}
+  19.167%{transform:translate(-106.08px,57.09px);opacity:1.00}
+  19.583%{transform:translate(-104.15px,45.51px);opacity:1.00}
+  20.0%{transform:translate(-100.98px,35.47px);opacity:1.00}
+  20.417%{transform:translate(-98.13px,26.53px);opacity:1.00}
+  20.833%{transform:translate(-95.83px,18.56px);opacity:1.00}
+  21.25%{transform:translate(-94.19px,11.48px);opacity:1.00}
+  22.083%{transform:translate(-92.84px,-0.19px);opacity:1.00}
+  22.917%{transform:translate(-92.66px,-8.67px);opacity:1.00}
+  23.75%{transform:translate(-92.65px,-14.41px);opacity:1.00}
+  24.583%{transform:translate(-92.66px,-17.95px);opacity:1.00}
+  25.833%{transform:translate(-92.66px,-20.29px);opacity:1.00}
+  72.083%{transform:translate(-92.27px,-20.73px);opacity:1.00}
+  75.0%{transform:translate(-89.72px,-21.17px);opacity:1.00}
+  77.083%{transform:translate(-85.09px,-22.01px);opacity:1.00}
+  79.167%{transform:translate(-77.31px,-23.40px);opacity:1.00}
+  80.833%{transform:translate(-68.42px,-24.88px);opacity:1.00}
+  82.5%{transform:translate(-56.18px,-26.47px);opacity:1.00}
+  84.167%{transform:translate(-40.36px,-27.78px);opacity:1.00}
+  85.417%{transform:translate(-26.68px,-27.52px);opacity:1.00}
+  86.667%{transform:translate(-15.31px,-24.36px);opacity:1.00}
+  87.917%{transform:translate(-6.51px,-19.81px);opacity:1.00}
+  89.583%{transform:translate(1.91px,-13.99px);opacity:1.00}
+  90.833%{transform:translate(5.97px,-9.91px);opacity:1.00}
+  91.667%{transform:translate(6.19px,-6.89px);opacity:1.00}
+  93.333%{transform:translate(3.45px,-3.26px);opacity:1.00}
+  96.25%{transform:translate(0.52px,-0.65px);opacity:1.00}
+  100.0%{transform:translate(0.00px,-0.00px);opacity:1.00}
+}
+
+@keyframes sunSize{
+  0.0%{transform:scale(0.1233)}
+  14.583%{transform:scale(0.1233)}
+  15.0%{transform:scale(0.1233)}
+  15.417%{transform:scale(0.1233)}
+  15.833%{transform:scale(0.1233)}
+  16.25%{transform:scale(0.1233)}
+  16.667%{transform:scale(0.1233)}
+  17.083%{transform:scale(0.1233)}
+  17.5%{transform:scale(0.1233)}
+  17.917%{transform:scale(0.1234)}
+  18.333%{transform:scale(0.1303)}
+  18.75%{transform:scale(0.1573)}
+  19.167%{transform:scale(0.2109)}
+  19.583%{transform:scale(0.2918)}
+  20.0%{transform:scale(0.3836)}
+  20.417%{transform:scale(0.4442)}
+  20.833%{transform:scale(0.4812)}
+  21.25%{transform:scale(0.5032)}
+  22.083%{transform:scale(0.5226)}
+  22.917%{transform:scale(0.5279)}
+  23.75%{transform:scale(0.5291)}
+  24.583%{transform:scale(0.5292)}
+  25.833%{transform:scale(0.5293)}
+  72.083%{transform:scale(0.5306)}
+  75.0%{transform:scale(0.5395)}
+  77.083%{transform:scale(0.5551)}
+  79.167%{transform:scale(0.5814)}
+  80.833%{transform:scale(0.6126)}
+  82.5%{transform:scale(0.6605)}
+  84.167%{transform:scale(0.7369)}
+  85.417%{transform:scale(0.8127)}
+  86.667%{transform:scale(0.8833)}
+  87.917%{transform:scale(0.9447)}
+  89.583%{transform:scale(1.0065)}
+  90.833%{transform:scale(1.0366)}
+  91.667%{transform:scale(1.0393)}
+  93.333%{transform:scale(1.0222)}
+  96.25%{transform:scale(1.0033)}
+  100.0%{transform:scale(1.0000)}
+}
+
+/* ---- желе: растяжение выведено из мгновенной скорости по траектории ---- */
+@keyframes sunJelly{
+  0.0%{transform:rotate(0.0deg) scale(1.0000,1.0000) rotate(-0.0deg) scale(1.0000,1.0000)}
+  10.938%{transform:rotate(0.0deg) scale(1.0000,1.0000) rotate(-0.0deg) scale(1.0000,1.0000)}
+  11.25%{transform:rotate(167.4deg) scale(1.1700,0.8300) rotate(-167.4deg) scale(1.0000,1.0000)}
+  11.562%{transform:rotate(173.3deg) scale(1.1700,0.8300) rotate(-173.3deg) scale(1.0000,1.0000)}
+  11.875%{transform:rotate(-174.8deg) scale(1.1700,0.8300) rotate(174.8deg) scale(1.0000,1.0000)}
+  13.125%{transform:rotate(-122.5deg) scale(1.1700,0.8300) rotate(122.5deg) scale(1.0000,1.0000)}
+  13.438%{transform:rotate(-112.7deg) scale(1.1700,0.8300) rotate(112.7deg) scale(1.0000,1.0000)}
+  14.375%{transform:rotate(-88.1deg) scale(1.1700,0.8300) rotate(88.1deg) scale(1.0000,1.0000)}
+  14.688%{transform:rotate(-78.6deg) scale(1.1700,0.8300) rotate(78.6deg) scale(1.0000,1.0000)}
+  15.0%{transform:rotate(-72.8deg) scale(1.1700,0.8300) rotate(72.8deg) scale(1.0000,1.0000)}
+  15.313%{transform:rotate(-72.7deg) scale(1.1700,0.8300) rotate(72.7deg) scale(1.0000,1.0000)}
+  15.938%{transform:rotate(-77.8deg) scale(1.1700,0.8300) rotate(77.8deg) scale(1.0000,1.0000)}
+  16.563%{transform:rotate(-86.0deg) scale(1.1374,0.8626) rotate(86.0deg) scale(1.0000,1.0000)}
+  17.188%{transform:rotate(-89.4deg) scale(1.0974,0.9026) rotate(89.4deg) scale(1.0000,1.0000)}
+  18.75%{transform:rotate(-90.1deg) scale(1.0275,0.9725) rotate(90.1deg) scale(1.0000,1.0000)}
+  20.313%{transform:rotate(-90.0deg) scale(1.0006,0.9994) rotate(90.0deg) scale(1.0000,1.0000)}
+  20.625%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(1.1538,0.8462)}
+  21.25%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(1.0945,0.9055)}
+  22.188%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(0.9852,1.0148)}
+  22.812%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(0.9401,1.0599)}
+  23.438%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(0.9296,1.0704)}
+  24.375%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(0.9624,1.0376)}
+  25.625%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(1.0194,0.9806)}
+  26.563%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(1.0298,0.9702)}
+  29.375%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(0.9871,1.0129)}
+  32.5%{transform:rotate(-90.0deg) scale(1.0000,1.0000) rotate(90.0deg) scale(1.0055,0.9945)}
+  53.75%{transform:rotate(-90.0deg) scale(1.0019,0.9981) rotate(90.0deg) scale(1.0000,1.0000)}
+  54.062%{transform:rotate(-9.2deg) scale(1.0038,0.9962) rotate(9.2deg) scale(1.0000,1.0000)}
+  59.063%{transform:rotate(-10.2deg) scale(1.0416,0.9584) rotate(10.2deg) scale(1.0000,1.0000)}
+  61.562%{transform:rotate(-7.6deg) scale(1.0792,0.9208) rotate(7.6deg) scale(1.0000,1.0000)}
+  63.438%{transform:rotate(-3.3deg) scale(1.1153,0.8847) rotate(3.3deg) scale(1.0000,1.0000)}
+  64.062%{transform:rotate(2.1deg) scale(1.1167,0.8833) rotate(-2.1deg) scale(1.0000,1.0000)}
+  65.312%{transform:rotate(22.4deg) scale(1.0960,0.9040) rotate(-22.4deg) scale(1.0000,1.0000)}
+  66.562%{transform:rotate(32.4deg) scale(1.0759,0.9241) rotate(-32.4deg) scale(1.0000,1.0000)}
+  67.812%{transform:rotate(41.5deg) scale(1.0545,0.9455) rotate(-41.5deg) scale(1.0000,1.0000)}
+  68.125%{transform:rotate(45.8deg) scale(1.0492,0.9508) rotate(-45.8deg) scale(1.0000,1.0000)}
+  68.438%{transform:rotate(57.4deg) scale(1.0439,0.9561) rotate(-57.4deg) scale(1.0000,1.0000)}
+  69.062%{transform:rotate(103.4deg) scale(1.0369,0.9631) rotate(-103.4deg) scale(1.0000,1.0000)}
+  69.375%{transform:rotate(118.9deg) scale(1.0342,0.9658) rotate(-118.9deg) scale(1.0000,1.0000)}
+  69.688%{transform:rotate(127.8deg) scale(1.0306,0.9694) rotate(-127.8deg) scale(1.0000,1.0000)}
+  70.0%{transform:rotate(133.1deg) scale(1.0272,0.9728) rotate(-133.1deg) scale(1.0000,1.0000)}
+  70.625%{transform:rotate(137.9deg) scale(1.0211,0.9789) rotate(-137.9deg) scale(1.0000,1.0000)}
+  71.562%{transform:rotate(139.0deg) scale(1.0133,0.9867) rotate(-139.0deg) scale(1.0000,1.0000)}
+  72.812%{transform:rotate(133.3deg) scale(1.0060,0.9940) rotate(-133.3deg) scale(1.0000,1.0000)}
+  73.437%{transform:rotate(127.5deg) scale(1.0035,0.9965) rotate(-127.5deg) scale(1.0000,1.0000)}
+  75.312%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(1.0000,1.0000)}
+  75.625%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(1.1068,0.8932)}
+  77.5%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(0.9663,1.0337)}
+  78.438%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(0.9501,1.0499)}
+  80.938%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(1.0199,0.9801)}
+  82.813%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(1.0044,0.9956)}
+  85.0%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(0.9924,1.0076)}
+  88.438%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(1.0000,1.0000)}
+  100.0%{transform:rotate(127.5deg) scale(1.0000,1.0000) rotate(-127.5deg) scale(1.0000,1.0000)}
+}
+
+/* ---- комета: тот же путь до подмены солнышком (подмена вне кадра) ---- */
+@keyframes dashFly{
+  0.0%{transform:translate(-53.0px,121.8px);opacity:0.0}
+  2.0%{transform:translate(-40.1px,118.7px);opacity:0.002}
+  3.333%{transform:translate(-31.5px,116.7px);opacity:0.045}
+  4.667%{transform:translate(-22.9px,114.6px);opacity:0.135}
+  6.667%{transform:translate(-10.0px,111.5px);opacity:0.327}
+  10.667%{transform:translate(15.6px,105.4px);opacity:0.767}
+  11.333%{transform:translate(19.8px,104.4px);opacity:0.829}
+  12.667%{transform:translate(26.4px,98.7px);opacity:0.929}
+  14.0%{transform:translate(33.1px,93.2px);opacity:0.989}
+  17.333%{transform:translate(51.1px,81.5px);opacity:1.0}
+  21.333%{transform:translate(73.8px,70.5px);opacity:1.0}
+  25.333%{transform:translate(97.0px,62.3px);opacity:1.0}
+  30.0%{transform:translate(123.8px,55.7px);opacity:1.0}
+  35.333%{transform:translate(153.7px,51.2px);opacity:1.0}
+  41.333%{transform:translate(186.2px,49.1px);opacity:1.0}
+  48.667%{transform:translate(225.2px,49.7px);opacity:1.0}
+  54.667%{transform:translate(257.6px,52.6px);opacity:1.0}
+  60.0%{transform:translate(287.3px,57.8px);opacity:1.0}
+  64.0%{transform:translate(310.0px,64.1px);opacity:1.0}
+  67.333%{transform:translate(328.9px,71.7px);opacity:1.0}
+  70.667%{transform:translate(347.0px,82.0px);opacity:1.0}
+  72.667%{transform:translate(357.0px,89.7px);opacity:0.993}
+  74.0%{transform:translate(363.2px,95.7px);opacity:0.939}
+  76.0%{transform:translate(371.3px,105.7px);opacity:0.783}
+  78.0%{transform:translate(377.6px,117.1px);opacity:0.58}
+  80.0%{transform:translate(381.9px,129.4px);opacity:0.375}
+  82.0%{transform:translate(384.1px,142.5px);opacity:0.217}
+  83.333%{transform:translate(384.4px,151.8px);opacity:0.164}
+  85.333%{transform:translate(383.1px,166.8px);opacity:0.16}
+  87.333%{transform:translate(379.4px,182.4px);opacity:0.16}
+  89.333%{transform:translate(373.3px,197.7px);opacity:0.16}
+  91.333%{transform:translate(364.9px,211.8px);opacity:0.16}
+  93.333%{transform:translate(354.3px,224.4px);opacity:0.16}
+  95.333%{transform:translate(341.9px,235.2px);opacity:0.16}
+  97.333%{transform:translate(328.0px,244.0px);opacity:0.16}
+  99.333%{transform:translate(313.0px,250.8px);opacity:0.16}
+  100.0%{transform:translate(307.8px,252.6px);opacity:0.16}
+}
+
+/* ---- желе кометы: форма догоняет движение пружиной, хвост — тело ---- */
+@keyframes dashJelly{
+  0.0%{transform:rotate(-13.48deg) scale(1.0000,1.0000)}
+  2.46%{transform:rotate(-13.48deg) scale(1.0204,0.9796)}
+  7.487%{transform:rotate(-13.77deg) scale(1.1135,0.8865)}
+  8.663%{transform:rotate(-15.93deg) scale(1.1336,0.8664)}
+  9.947%{transform:rotate(-20.51deg) scale(1.1520,0.8480)}
+  11.872%{transform:rotate(-28.36deg) scale(1.1720,0.8280)}
+  13.369%{transform:rotate(-33.17deg) scale(1.1820,0.8180)}
+  14.332%{transform:rotate(-34.42deg) scale(1.1865,0.8135)}
+  15.401%{transform:rotate(-33.85deg) scale(1.1902,0.8098)}
+  19.679%{transform:rotate(-25.34deg) scale(1.1946,0.8054)}
+  22.888%{transform:rotate(-20.18deg) scale(1.1900,0.8100)}
+  26.096%{transform:rotate(-15.80deg) scale(1.1832,0.8168)}
+  29.519%{transform:rotate(-11.79deg) scale(1.1763,0.8237)}
+  33.583%{transform:rotate(-7.72deg) scale(1.1698,0.8302)}
+  39.037%{transform:rotate(-3.15deg) scale(1.1637,0.8363)}
+  50.909%{transform:rotate(4.53deg) scale(1.1582,0.8418)}
+  56.684%{transform:rotate(9.37deg) scale(1.1579,0.8421)}
+  61.925%{transform:rotate(15.68deg) scale(1.1579,0.8421)}
+  66.31%{transform:rotate(23.45deg) scale(1.1567,0.8433)}
+  69.947%{transform:rotate(32.73deg) scale(1.1533,0.8467)}
+  73.476%{transform:rotate(45.17deg) scale(1.1467,0.8533)}
+  79.679%{transform:rotate(74.07deg) scale(1.1340,0.8660)}
+  82.246%{transform:rotate(86.27deg) scale(1.1348,0.8652)}
+  84.92%{transform:rotate(97.78deg) scale(1.1410,0.8590)}
+  93.583%{transform:rotate(135.51deg) scale(1.1719,0.8281)}
+  96.364%{transform:rotate(147.24deg) scale(1.1798,0.8202)}
+  98.075%{transform:rotate(152.40deg) scale(1.1847,0.8153)}
+  98.93%{transform:rotate(153.81deg) scale(1.1873,0.8127)}
+  100.0%{transform:rotate(154.92deg) scale(1.1908,0.8092)}
+}
+
+@keyframes dashJellyTail{
+  0.0%{transform:rotate(0.00deg) scale(1.0000,1.0000)}
+  2.46%{transform:rotate(-0.00deg) scale(1.0071,0.9964)}
+  7.487%{transform:rotate(0.28deg) scale(1.0397,0.9801)}
+  8.663%{transform:rotate(2.43deg) scale(1.0468,0.9766)}
+  9.947%{transform:rotate(6.95deg) scale(1.0532,0.9734)}
+  11.872%{transform:rotate(14.37deg) scale(1.0602,0.9699)}
+  13.369%{transform:rotate(18.42deg) scale(1.0637,0.9681)}
+  14.332%{transform:rotate(18.97deg) scale(1.0653,0.9674)}
+  15.401%{transform:rotate(17.45deg) scale(1.0666,0.9667)}
+  19.679%{transform:rotate(4.56deg) scale(1.0681,0.9660)}
+  22.888%{transform:rotate(-3.00deg) scale(1.0665,0.9668)}
+  26.096%{transform:rotate(-8.32deg) scale(1.0641,0.9679)}
+  29.519%{transform:rotate(-11.72deg) scale(1.0617,0.9691)}
+  33.583%{transform:rotate(-13.29deg) scale(1.0594,0.9703)}
+  39.037%{transform:rotate(-12.69deg) scale(1.0573,0.9713)}
+  50.909%{transform:rotate(-8.30deg) scale(1.0554,0.9723)}
+  56.684%{transform:rotate(-8.31deg) scale(1.0553,0.9724)}
+  61.925%{transform:rotate(-10.44deg) scale(1.0553,0.9724)}
+  66.31%{transform:rotate(-14.27deg) scale(1.0548,0.9726)}
+  69.947%{transform:rotate(-19.49deg) scale(1.0537,0.9732)}
+  73.476%{transform:rotate(-26.83deg) scale(1.0513,0.9743)}
+  79.679%{transform:rotate(-42.21deg) scale(1.0469,0.9766)}
+  82.246%{transform:rotate(-46.71deg) scale(1.0472,0.9764)}
+  84.92%{transform:rotate(-48.94deg) scale(1.0494,0.9753)}
+  93.583%{transform:rotate(-51.12deg) scale(1.0602,0.9699)}
+  96.364%{transform:rotate(-50.47deg) scale(1.0629,0.9685)}
+  98.075%{transform:rotate(-47.93deg) scale(1.0646,0.9677)}
+  98.93%{transform:rotate(-45.52deg) scale(1.0656,0.9672)}
+  100.0%{transform:rotate(-41.90deg) scale(1.0668,0.9666)}
+}
+
+/* ---- цикл: пульсация и медленное «дыхание» желе ---- */
+@keyframes jellyIdle{
+  0.0%{transform:scale(1.0000,1.0000)}
+  28.0%{transform:scale(1.0220,0.9780)}
+  55.0%{transform:scale(0.9840,1.0160)}
+  80.0%{transform:scale(1.0100,0.9900)}
+  100.0%{transform:scale(1.0000,1.0000)}
+}
+
+@keyframes sunPulse{
+  0.0%{transform:translate(0px,0px) scale(1.0)}
+  45.0%{transform:translate(6px,-3px) scale(0.952)}
+  100.0%{transform:translate(0px,0px) scale(1.0)}
+}
+
+/* ---- отклик на нажатие ---- */
+@keyframes sunPress{
+  0.0%{transform:scale(1.0000,1.0000)}
+  11.486%{transform:scale(1.1700,0.8550)}
+  16.404%{transform:scale(1.0630,0.9370)}
+  21.321%{transform:scale(0.9919,1.0081)}
+  26.239%{transform:scale(0.9489,1.0511)}
+  31.156%{transform:scale(0.9495,1.0505)}
+  36.074%{transform:scale(0.9788,1.0212)}
+  40.991%{transform:scale(1.0107,0.9893)}
+  45.908%{transform:scale(1.0259,0.9741)}
+  50.826%{transform:scale(1.0212,0.9788)}
+  55.743%{transform:scale(1.0059,0.9941)}
+  60.661%{transform:scale(0.9922,1.0078)}
+  65.578%{transform:scale(0.9875,1.0125)}
+  70.495%{transform:scale(0.9916,1.0084)}
+  75.413%{transform:scale(0.9991,1.0009)}
+  80.33%{transform:scale(1.0047,0.9953)}
+  85.248%{transform:scale(1.0057,0.9943)}
+  90.165%{transform:scale(1.0031,0.9969)}
+  95.083%{transform:scale(0.9996,1.0004)}
+  100.0%{transform:scale(1.0000,1.0000)}
+}
+
+/* ---- взгляд и моргание ---- */
+@keyframes gazeIntro{
+  0.0%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  6.931%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  12.871%{transform:translateX(-9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  20.792%{transform:translateX(-9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  26.733%{transform:translateX(-9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  32.673%{transform:translateX(9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  40.594%{transform:translateX(9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  46.535%{transform:translateX(9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  52.475%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  100.0%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+}
+
+@keyframes gazeLoop{
+  0.0%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  10.227%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  19.318%{transform:translateX(9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  39.773%{transform:translateX(9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  48.864%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  57.955%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  67.045%{transform:translateX(-9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  84.091%{transform:translateX(-9px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  93.182%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+  100.0%{transform:translateX(0px);animation-timing-function:cubic-bezier(.34,1.24,.44,1)}
+}
+
+@keyframes blinkIntro{
+  0.0%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  19.307%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  20.792%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  22.277%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  39.109%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  40.594%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  42.079%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  50.396%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  51.881%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  53.366%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  62.871%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  64.356%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  65.842%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  76.733%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  78.218%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  79.703%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  88.614%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  90.099%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  91.584%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  100.0%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+}
+
+@keyframes blinkLoop{
+  0.0%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  7.386%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  9.091%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  10.795%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  39.205%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  40.909%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  42.614%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  56.25%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  57.955%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  59.659%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  82.841%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  84.545%{height:13px;y:-6.5px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  86.25%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+  100.0%{height:36px;y:-18px;animation-timing-function:cubic-bezier(.4,0,.5,1)}
+}
+
+/* ---- реакция: позы глаз сменяются через моргание ---- */
+@keyframes sparkBar{
+  0.0%{opacity:1;transform:scaleY(1.000)}
+  19.091%{opacity:1;transform:scaleY(1.000)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  51.455%{opacity:0;transform:scaleY(0.140)}
+  100.0%{opacity:0;transform:scaleY(0.140)}
+}
+
+@keyframes sparkSpark{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  48.545%{opacity:0;transform:scaleY(0.140)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  80.909%{opacity:1;transform:scaleY(1.000)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+@keyframes starsBar{
+  0.0%{opacity:1;transform:scaleY(1.000)}
+  19.091%{opacity:1;transform:scaleY(1.000)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  51.455%{opacity:0;transform:scaleY(0.140)}
+  100.0%{opacity:0;transform:scaleY(0.140)}
+}
+
+@keyframes starsStars{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  48.545%{opacity:0;transform:scaleY(0.140)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  80.909%{opacity:1;transform:scaleY(1.000)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+@keyframes happyBar{
+  0.0%{opacity:1;transform:scaleY(1.000)}
+  19.091%{opacity:1;transform:scaleY(1.000)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  51.455%{opacity:0;transform:scaleY(0.140)}
+  100.0%{opacity:0;transform:scaleY(0.140)}
+}
+
+@keyframes happyHappy{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  48.545%{opacity:0;transform:scaleY(0.140)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  80.909%{opacity:1;transform:scaleY(1.000)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+@keyframes halfBar{
+  0.0%{opacity:1;transform:scaleY(1.000)}
+  19.091%{opacity:1;transform:scaleY(1.000)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  51.455%{opacity:0;transform:scaleY(0.140)}
+  100.0%{opacity:0;transform:scaleY(0.140)}
+}
+
+@keyframes halfHalf{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  48.545%{opacity:0;transform:scaleY(0.140)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  80.909%{opacity:1;transform:scaleY(1.000)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+@keyframes closedBar{
+  0.0%{opacity:1;transform:scaleY(1.000)}
+  19.091%{opacity:1;transform:scaleY(1.000)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  51.455%{opacity:0;transform:scaleY(0.140)}
+  100.0%{opacity:0;transform:scaleY(0.140)}
+}
+
+@keyframes closedClosed{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  48.545%{opacity:0;transform:scaleY(0.140)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  80.909%{opacity:1;transform:scaleY(1.000)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+@keyframes sadBar{
+  0.0%{opacity:1;transform:scaleY(1.000)}
+  19.091%{opacity:1;transform:scaleY(1.000)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  51.455%{opacity:0;transform:scaleY(0.140)}
+  100.0%{opacity:0;transform:scaleY(0.140)}
+}
+
+@keyframes sadSad{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  48.545%{opacity:0;transform:scaleY(0.140)}
+  50.0%{opacity:1;transform:scaleY(0.140)}
+  80.909%{opacity:1;transform:scaleY(1.000)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+@keyframes sadTear{
+  0.0%{opacity:0;transform:scaleY(0.140)}
+  76.545%{opacity:0;transform:scaleY(0.140)}
+  78.0%{opacity:1;transform:scaleY(0.140)}
+  100.0%{opacity:1;transform:scaleY(1.000)}
+}
+
+/* ---- реакция: фон уходит в палитру настроения ---- */
+@keyframes bgTo{to{background:var(--to-bg)}}
+
+@keyframes blob1To{to{background:var(--to-blob-1)}}
+
+@keyframes blob2To{to{background:var(--to-blob-2)}}
+
+@keyframes innerTo{to{box-shadow:inset 0 0 6px 4px rgba(255,255,255,.9), inset 0 0 46px 0 var(--to-inner)}}
+
+/* ---- свечение и вращение лучей ---- */
+@keyframes glowIn{from{filter:drop-shadow(0 0 8.4px rgba(var(--glow-a),.55)) drop-shadow(0 0 22px rgba(var(--glow-b),.25))}to{filter:drop-shadow(0 0 8.4px rgba(var(--glow-a),1)) drop-shadow(0 0 22px rgba(var(--glow-b),1))}}
+
+@keyframes glowBreath{0%{filter:drop-shadow(0 0 8.4px rgba(var(--glow-a),1)) drop-shadow(0 0 22px rgba(var(--glow-b),1))}45%{filter:drop-shadow(0 0 11px rgba(var(--glow-a),1)) drop-shadow(0 0 30px rgba(var(--glow-b),1))}100%{filter:drop-shadow(0 0 8.4px rgba(var(--glow-a),1)) drop-shadow(0 0 22px rgba(var(--glow-b),1))}}
+
+@keyframes rayspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* ---- текст: цифра вырастает на месте с желейным перелётом ---- */
+@keyframes digitIn{
+  0.0%{transform:scale(0.0637,0.0763);opacity:0.0}
+  1.667%{transform:scale(0.0878,0.1052);opacity:0.014}
+  3.333%{transform:scale(0.1306,0.1565);opacity:0.053}
+  5.0%{transform:scale(0.1873,0.2243);opacity:0.112}
+  6.667%{transform:scale(0.2534,0.3036);opacity:0.189}
+  8.333%{transform:scale(0.3253,0.3897);opacity:0.278}
+  10.0%{transform:scale(0.3998,0.4789);opacity:0.376}
+  11.667%{transform:scale(0.4743,0.5681);opacity:0.479}
+  13.333%{transform:scale(0.5465,0.6546);opacity:0.583}
+  15.0%{transform:scale(0.6150,0.7367);opacity:0.684}
+  16.667%{transform:scale(0.6785,0.8127);opacity:0.777}
+  18.333%{transform:scale(0.7361,0.8818);opacity:0.859}
+  20.0%{transform:scale(0.7954,0.9353);opacity:0.926}
+  21.667%{transform:scale(0.8676,0.9614);opacity:0.973}
+  23.333%{transform:scale(0.9315,0.9815);opacity:0.998}
+  25.0%{transform:scale(0.9865,0.9966);opacity:1.0}
+  26.667%{transform:scale(1.0321,1.0077);opacity:1.0}
+  28.333%{transform:scale(1.0685,1.0158);opacity:1.0}
+  30.0%{transform:scale(1.0963,1.0215);opacity:1.0}
+  31.667%{transform:scale(1.1160,1.0253);opacity:1.0}
+  33.333%{transform:scale(1.1286,1.0276);opacity:1.0}
+  35.0%{transform:scale(1.1349,1.0287);opacity:1.0}
+  36.667%{transform:scale(1.1361,1.0289);opacity:1.0}
+  38.333%{transform:scale(1.1331,1.0284);opacity:1.0}
+  40.0%{transform:scale(1.1267,1.0272);opacity:1.0}
+  41.667%{transform:scale(1.1179,1.0256);opacity:1.0}
+  43.333%{transform:scale(1.1074,1.0236);opacity:1.0}
+  45.0%{transform:scale(1.0959,1.0214);opacity:1.0}
+  46.667%{transform:scale(1.0839,1.0190);opacity:1.0}
+  48.333%{transform:scale(1.0719,1.0165);opacity:1.0}
+  50.0%{transform:scale(1.0602,1.0140);opacity:1.0}
+  51.667%{transform:scale(1.0491,1.0116);opacity:1.0}
+  53.333%{transform:scale(1.0388,1.0093);opacity:1.0}
+  55.0%{transform:scale(1.0294,1.0071);opacity:1.0}
+  56.667%{transform:scale(1.0211,1.0051);opacity:1.0}
+  58.333%{transform:scale(1.0138,1.0034);opacity:1.0}
+  60.0%{transform:scale(1.0076,1.0019);opacity:1.0}
+  61.667%{transform:scale(1.0024,1.0006);opacity:1.0}
+  63.333%{transform:scale(0.9981,0.9995);opacity:1.0}
+  65.0%{transform:scale(0.9948,0.9987);opacity:1.0}
+  66.667%{transform:scale(0.9922,0.9980);opacity:1.0}
+  68.333%{transform:scale(0.9904,0.9976);opacity:1.0}
+  70.0%{transform:scale(0.9892,0.9973);opacity:1.0}
+  71.667%{transform:scale(0.9885,0.9971);opacity:1.0}
+  73.333%{transform:scale(0.9883,0.9970);opacity:1.0}
+  75.0%{transform:scale(0.9885,0.9971);opacity:1.0}
+  76.667%{transform:scale(0.9890,0.9972);opacity:1.0}
+  78.333%{transform:scale(0.9897,0.9974);opacity:1.0}
+  80.0%{transform:scale(0.9905,0.9976);opacity:1.0}
+  81.667%{transform:scale(0.9915,0.9978);opacity:1.0}
+  83.333%{transform:scale(0.9925,0.9981);opacity:1.0}
+  85.0%{transform:scale(0.9935,0.9984);opacity:1.0}
+  86.667%{transform:scale(0.9945,0.9986);opacity:1.0}
+  88.333%{transform:scale(0.9955,0.9989);opacity:1.0}
+  90.0%{transform:scale(0.9964,0.9991);opacity:1.0}
+  91.667%{transform:scale(0.9972,0.9993);opacity:1.0}
+  93.333%{transform:scale(0.9980,0.9995);opacity:1.0}
+  95.0%{transform:scale(0.9986,0.9997);opacity:1.0}
+  96.667%{transform:scale(0.9992,0.9998);opacity:1.0}
+  98.333%{transform:scale(0.9997,0.9999);opacity:1.0}
+  100.0%{transform:scale(1.0000,1.0000);opacity:1.0}
+}
+
+/* ---- звёздочка луны: падает на ниточке и качается ---- */
+@keyframes starIn{
+  0%{opacity:0;transform:translateY(-9px) rotate(-7deg)}
+  45%{opacity:1}
+  62%{transform:translateY(0) rotate(4.5deg)}
+  82%{transform:translateY(0) rotate(-2deg)}
+  100%{opacity:1;transform:translateY(0) rotate(0)}
+}
+
+@keyframes starSwing{
+  0.0%{transform:rotate(0.00deg)}
+  30.0%{transform:rotate(2.40deg)}
+  62.0%{transform:rotate(-2.00deg)}
+  84.0%{transform:rotate(0.80deg)}
+  100.0%{transform:rotate(0.00deg)}
+}
+
+/* ---- подпись: появляется на месте, дальше чуть дышит, как желе ---- */
+@keyframes lblIn{
+  0.0%{transform:scale(0.7998,0.9202);opacity:0.0}
+  1.667%{transform:scale(0.8041,0.9222);opacity:0.004}
+  3.333%{transform:scale(0.8119,0.9258);opacity:0.016}
+  5.0%{transform:scale(0.8224,0.9306);opacity:0.034}
+  6.667%{transform:scale(0.8348,0.9362);opacity:0.059}
+  8.333%{transform:scale(0.8486,0.9422);opacity:0.09}
+  10.0%{transform:scale(0.8632,0.9485);opacity:0.126}
+  11.667%{transform:scale(0.8782,0.9548);opacity:0.167}
+  13.333%{transform:scale(0.8932,0.9609);opacity:0.211}
+  15.0%{transform:scale(0.9079,0.9667);opacity:0.259}
+  16.667%{transform:scale(0.9219,0.9721);opacity:0.31}
+  18.333%{transform:scale(0.9352,0.9771);opacity:0.363}
+  20.0%{transform:scale(0.9475,0.9816);opacity:0.417}
+  21.667%{transform:scale(0.9587,0.9857);opacity:0.472}
+  23.333%{transform:scale(0.9688,0.9893);opacity:0.528}
+  25.0%{transform:scale(0.9778,0.9924);opacity:0.583}
+  26.667%{transform:scale(0.9856,0.9951);opacity:0.637}
+  28.333%{transform:scale(0.9923,0.9974);opacity:0.69}
+  30.0%{transform:scale(0.9979,0.9993);opacity:0.741}
+  31.667%{transform:scale(1.0026,1.0009);opacity:0.789}
+  33.333%{transform:scale(1.0063,1.0021);opacity:0.833}
+  35.0%{transform:scale(1.0092,1.0030);opacity:0.874}
+  36.667%{transform:scale(1.0113,1.0037);opacity:0.91}
+  38.333%{transform:scale(1.0128,1.0042);opacity:0.941}
+  40.0%{transform:scale(1.0137,1.0045);opacity:0.966}
+  41.667%{transform:scale(1.0142,1.0047);opacity:0.984}
+  43.333%{transform:scale(1.0142,1.0047);opacity:0.996}
+  45.0%{transform:scale(1.0139,1.0046);opacity:1.0}
+  46.667%{transform:scale(1.0133,1.0044);opacity:1.0}
+  48.333%{transform:scale(1.0126,1.0041);opacity:1.0}
+  50.0%{transform:scale(1.0117,1.0038);opacity:1.0}
+  51.667%{transform:scale(1.0107,1.0035);opacity:1.0}
+  53.333%{transform:scale(1.0096,1.0032);opacity:1.0}
+  55.0%{transform:scale(1.0085,1.0028);opacity:1.0}
+  56.667%{transform:scale(1.0075,1.0025);opacity:1.0}
+  58.333%{transform:scale(1.0064,1.0021);opacity:1.0}
+  60.0%{transform:scale(1.0054,1.0018);opacity:1.0}
+  61.667%{transform:scale(1.0045,1.0015);opacity:1.0}
+  63.333%{transform:scale(1.0036,1.0012);opacity:1.0}
+  65.0%{transform:scale(1.0029,1.0010);opacity:1.0}
+  66.667%{transform:scale(1.0022,1.0007);opacity:1.0}
+  68.333%{transform:scale(1.0015,1.0005);opacity:1.0}
+  70.0%{transform:scale(1.0010,1.0003);opacity:1.0}
+  71.667%{transform:scale(1.0006,1.0002);opacity:1.0}
+  73.333%{transform:scale(1.0002,1.0001);opacity:1.0}
+  75.0%{transform:scale(0.9998,0.9999);opacity:1.0}
+  76.667%{transform:scale(0.9996,0.9999);opacity:1.0}
+  78.333%{transform:scale(0.9994,0.9998);opacity:1.0}
+  80.0%{transform:scale(0.9992,0.9997);opacity:1.0}
+  81.667%{transform:scale(0.9991,0.9997);opacity:1.0}
+  83.333%{transform:scale(0.9991,0.9997);opacity:1.0}
+  85.0%{transform:scale(0.9991,0.9997);opacity:1.0}
+  86.667%{transform:scale(0.9990,0.9997);opacity:1.0}
+  88.333%{transform:scale(0.9991,0.9997);opacity:1.0}
+  90.0%{transform:scale(0.9991,0.9997);opacity:1.0}
+  91.667%{transform:scale(0.9992,0.9997);opacity:1.0}
+  93.333%{transform:scale(0.9992,0.9997);opacity:1.0}
+  95.0%{transform:scale(0.9993,0.9998);opacity:1.0}
+  96.667%{transform:scale(0.9994,0.9998);opacity:1.0}
+  98.333%{transform:scale(0.9994,0.9998);opacity:1.0}
+  100.0%{transform:scale(1.0000,1.0000);opacity:1.0}
+}
+
+/* ---- огонёк: распускается из своего центра, как цифры ---- */
+@keyframes fireIn{
+  0.0%{transform:scale(0.0910,0.1090);opacity:0.0}
+  1.667%{transform:scale(0.1045,0.1251);opacity:0.01}
+  3.333%{transform:scale(0.1290,0.1545);opacity:0.039}
+  5.0%{transform:scale(0.1625,0.1946);opacity:0.084}
+  6.667%{transform:scale(0.2029,0.2431);opacity:0.143}
+  8.333%{transform:scale(0.2486,0.2977);opacity:0.213}
+  10.0%{transform:scale(0.2978,0.3567);opacity:0.292}
+  11.667%{transform:scale(0.3493,0.4184);opacity:0.376}
+  13.333%{transform:scale(0.4018,0.4813);opacity:0.464}
+  15.0%{transform:scale(0.4543,0.5442);opacity:0.553}
+  16.667%{transform:scale(0.5059,0.6060);opacity:0.641}
+  18.333%{transform:scale(0.5560,0.6660);opacity:0.725}
+  20.0%{transform:scale(0.6040,0.7234);opacity:0.802}
+  21.667%{transform:scale(0.6493,0.7777);opacity:0.87}
+  23.333%{transform:scale(0.6917,0.8286);opacity:0.926}
+  25.0%{transform:scale(0.7310,0.8756);opacity:0.968}
+  26.667%{transform:scale(0.7699,0.9157);opacity:0.993}
+  28.333%{transform:scale(0.8200,0.9373);opacity:1.0}
+  30.0%{transform:scale(0.8661,0.9555);opacity:1.0}
+  31.667%{transform:scale(0.9079,0.9706);opacity:1.0}
+  33.333%{transform:scale(0.9452,0.9832);opacity:1.0}
+  35.0%{transform:scale(0.9781,0.9935);opacity:1.0}
+  36.667%{transform:scale(1.0064,1.0019);opacity:1.0}
+  38.333%{transform:scale(1.0305,1.0086);opacity:1.0}
+  40.0%{transform:scale(1.0504,1.0139);opacity:1.0}
+  41.667%{transform:scale(1.0665,1.0180);opacity:1.0}
+  43.333%{transform:scale(1.0790,1.0211);opacity:1.0}
+  45.0%{transform:scale(1.0882,1.0234);opacity:1.0}
+  46.667%{transform:scale(1.0945,1.0249);opacity:1.0}
+  48.333%{transform:scale(1.0982,1.0258);opacity:1.0}
+  50.0%{transform:scale(1.0997,1.0261);opacity:1.0}
+  51.667%{transform:scale(1.0993,1.0260);opacity:1.0}
+  53.333%{transform:scale(1.0972,1.0256);opacity:1.0}
+  55.0%{transform:scale(1.0939,1.0248);opacity:1.0}
+  56.667%{transform:scale(1.0895,1.0237);opacity:1.0}
+  58.333%{transform:scale(1.0844,1.0225);opacity:1.0}
+  60.0%{transform:scale(1.0786,1.0211);opacity:1.0}
+  61.667%{transform:scale(1.0725,1.0195);opacity:1.0}
+  63.333%{transform:scale(1.0661,1.0179);opacity:1.0}
+  65.0%{transform:scale(1.0597,1.0163);opacity:1.0}
+  66.667%{transform:scale(1.0533,1.0147);opacity:1.0}
+  68.333%{transform:scale(1.0471,1.0130);opacity:1.0}
+  70.0%{transform:scale(1.0411,1.0114);opacity:1.0}
+  71.667%{transform:scale(1.0353,1.0099);opacity:1.0}
+  73.333%{transform:scale(1.0300,1.0084);opacity:1.0}
+  75.0%{transform:scale(1.0249,1.0071);opacity:1.0}
+  76.667%{transform:scale(1.0203,1.0058);opacity:1.0}
+  78.333%{transform:scale(1.0161,1.0046);opacity:1.0}
+  80.0%{transform:scale(1.0123,1.0035);opacity:1.0}
+  81.667%{transform:scale(1.0089,1.0026);opacity:1.0}
+  83.333%{transform:scale(1.0059,1.0017);opacity:1.0}
+  85.0%{transform:scale(1.0033,1.0010);opacity:1.0}
+  86.667%{transform:scale(1.0010,1.0003);opacity:1.0}
+  88.333%{transform:scale(0.9991,0.9997);opacity:1.0}
+  90.0%{transform:scale(0.9975,0.9993);opacity:1.0}
+  91.667%{transform:scale(0.9962,0.9989);opacity:1.0}
+  93.333%{transform:scale(0.9952,0.9986);opacity:1.0}
+  95.0%{transform:scale(0.9944,0.9984);opacity:1.0}
+  96.667%{transform:scale(0.9939,0.9982);opacity:1.0}
+  98.333%{transform:scale(0.9935,0.9981);opacity:1.0}
+  100.0%{transform:scale(1.0000,1.0000);opacity:1.0}
+}
+
+@keyframes lblPulse{
+  0.0%{transform:scale(1.0000,1.0000)}
+  30.0%{transform:scale(1.0160,0.9860)}
+  58.0%{transform:scale(0.9900,1.0100)}
+  82.0%{transform:scale(1.0060,0.9950)}
+  100.0%{transform:scale(1.0000,1.0000)}
+}
+
+@keyframes digitIdle2{
+  0.0%{transform:rotate(0.000deg) scale(1.0000,1.0000)}
+  24.0%{transform:rotate(0.440deg) scale(1.0180,0.9820)}
+  52.0%{transform:rotate(-0.800deg) scale(0.9888,1.0112)}
+  78.0%{transform:rotate(0.360deg) scale(1.0061,0.9939)}
+  100.0%{transform:rotate(0.000deg) scale(1.0000,1.0000)}
+}
+
+@keyframes digitIdle0{
+  0.0%{transform:rotate(0.000deg) scale(1.0000,1.0000)}
+  34.0%{transform:rotate(0.480deg) scale(1.0180,0.9820)}
+  62.0%{transform:rotate(-0.800deg) scale(0.9896,1.0104)}
+  86.0%{transform:rotate(0.320deg) scale(1.0054,0.9946)}
+  100.0%{transform:rotate(0.000deg) scale(1.0000,1.0000)}
+}
+
+
+/* создаётся gen_keyframes.py — руками не править */
+.stage[data-mood="spark"],
+.stage[data-mood="stars"],
+.stage[data-mood="happy"]{--to-bg:var(--up-bg); --to-blob-1:var(--up-blob-1);
+   --to-blob-2:var(--up-blob-2); --to-inner:var(--up-inner)}
+.stage[data-mood="half"],
+.stage[data-mood="closed"],
+.stage[data-mood="sad"]{--to-bg:var(--down-bg); --to-blob-1:var(--down-blob-1);
+   --to-blob-2:var(--down-blob-2); --to-inner:var(--down-inner)}
+.stage[data-mood="spark"],
+.stage[data-mood="stars"],
+.stage[data-mood="happy"],
+.stage[data-mood="half"],
+.stage[data-mood="closed"],
+.stage[data-mood="sad"]{animation:bgTo .7s 6.019s ease-out both}
+.stage[data-mood="spark"] .b41,
+.stage[data-mood="stars"] .b41,
+.stage[data-mood="happy"] .b41,
+.stage[data-mood="half"] .b41,
+.stage[data-mood="closed"] .b41,
+.stage[data-mood="sad"] .b41{animation:blob1To .7s 6.019s ease-out both}
+.stage[data-mood="spark"] .b40,
+.stage[data-mood="stars"] .b40,
+.stage[data-mood="happy"] .b40,
+.stage[data-mood="half"] .b40,
+.stage[data-mood="closed"] .b40,
+.stage[data-mood="sad"] .b40{animation:blob2To .7s 6.019s ease-out both}
+.stage[data-mood="spark"] .inner,
+.stage[data-mood="stars"] .inner,
+.stage[data-mood="happy"] .inner,
+.stage[data-mood="half"] .inner,
+.stage[data-mood="closed"] .inner,
+.stage[data-mood="sad"] .inner{animation:innerTo .7s 6.019s ease-out both}
+/* после реакции взгляд по сторонам выключен: он возил бы позу вбок */
+.stage[data-mood="spark"] .gaze,
+.stage[data-mood="stars"] .gaze,
+.stage[data-mood="happy"] .gaze,
+.stage[data-mood="half"] .gaze,
+.stage[data-mood="closed"] .gaze,
+.stage[data-mood="sad"] .gaze{animation:gazeIntro 5.05s 1.869s both}
+/* позы: выкладываем нужные и отдаём порядок дорожкам */
+.stage[data-mood="spark"] .eyes-bar{display:block;animation:sparkBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="spark"] .eyes-spark{display:block;animation:sparkSpark 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="stars"] .eyes-bar{display:block;animation:starsBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="stars"] .eyes-stars{display:block;animation:starsStars 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="happy"] .eyes-bar{display:block;animation:happyBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="happy"] .eyes-happy{display:block;animation:happyHappy 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="half"] .eyes-bar{display:block;animation:halfBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="half"] .eyes-half{display:block;animation:halfHalf 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="closed"] .eyes-bar{display:block;animation:closedBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="closed"] .eyes-closed{display:block;animation:closedClosed 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="sad"] .eyes-bar{display:block;animation:sadBar 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="sad"] .eyes-sad{display:block;animation:sadSad 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+.stage[data-mood="sad"] .eyes-tear{display:block;animation:sadTear 0.55s 6.019s cubic-bezier(.45,0,.55,1) both}
+
+/* ======================= привязка анимаций =======================
+   Времена подставляет build.py из src/times.py — их считает генератор
+   по длине траектории, руками править не нужно.
+
+   Вступление проигрывается один раз, дальше идёт бесконечный цикл.
+   Переключение без JS: цикловая анимация стоит в списке последней и
+   с задержкой — до её старта она не участвует, после старта побеждает. */
+
+.stage .dash1{animation:dashFly 0.78s linear both}
+.stage .dash1 .dash-jelly{animation:dashJelly 0.78s linear both}
+.stage .dash1 .dash-tail{animation:dashJellyTail 0.78s linear both}
+
+.stage .sun-pos {animation:sunPath 5.219s linear both}
+.stage .sun-size{animation:sunSize 5.219s linear both}
+.stage .sun-jelly{animation:sunJelly 6.919s linear both,
+                            jellyIdle 4.4s 6.919s ease-in-out infinite}
+.stage .sun-pulse{animation:sunPulse 4.4s 6.919s ease-in-out infinite}
+.stage .sun-press.press{animation:sunPress .74s cubic-bezier(.2,.75,.35,1)}
+
+.stage .rays{animation:rayspin 16s 2.619s linear infinite}
+.stage .sun-rays{animation:glowIn 1.2s 2.519s ease-out both,
+                           glowBreath 3.6s 3.719s ease-in-out infinite}
+
+.stage .gaze{animation:gazeIntro 5.05s 1.869s both, gazeLoop 4.4s 6.919s infinite}
+.stage .eye {animation:blinkIntro 5.05s 1.869s both, blinkLoop 4.4s 6.919s infinite}
+
+.stage .n2{animation:digitIn .52s 5.469s linear both,
+                     digitIdle2 4.4s 6.919s ease-in-out infinite}
+.stage .n0{animation:digitIn .52s 5.589s linear both,
+                     digitIdle0 4.4s 6.919s ease-in-out infinite}
+.stage .star{animation:starIn .62s 5.269s cubic-bezier(.3,.8,.4,1) both,
+                       starSwing 4.4s 6.919s ease-in-out infinite}
+.stage .lbl{animation:lblIn .4s 6.069s linear both,
+                      lblPulse 4.4s 6.919s ease-in-out infinite}
+.stage .fire{animation:fireIn .34s 6.129s linear both,
+                       lblPulse 4.4s 6.919s ease-in-out infinite}
+
+@media (prefers-reduced-motion:reduce){
+  .stage *{animation-duration:.001s!important;animation-delay:0s!important;
+           animation-iteration-count:1!important}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="blob b41"></div>
+  <div class="blob b40"></div>
+
+  <!-- комета: голова-капля и хвост из двух лучей с вырезом (Figma 1389:17463) -->
+  <div class="dash dash1"><div class="dash-jelly">
+    <!-- хвост — отдельный svg: он отстаёт от головы по своей, более мягкой
+         пружине, а поворот живёт на html-слое, где transform-origin считается
+         одинаково во всех движках -->
+    <svg class="dash-tail" viewBox="-100 -55 150 110" xmlns="http://www.w3.org/2000/svg">
+      <!-- задний слой: тот же силуэт крупнее и со сдвигом вперёд, из-за чего
+           по ведущему краю головы читается полумесяц -->
+      <g fill="var(--ink)" opacity=".4">
+        <path d="M-66,1 L1.4,21 L-1.1,-21 L-34,-15.5 L-22,-6.5 Z"/>
+        <circle cx="2.5" cy="2.5" r="21"/>
+      </g>
+      <!-- основной силуэт: длинный луч назад, короткий вверх, между ними вырез -->
+      <path fill="var(--ink)" d="M-51.9,0 L1.2,17.96 L-0.98,-17.97 L-26.5,-12 L-17.4,-5 Z"/>
+    </svg>
+    <svg class="dash-head" viewBox="-100 -55 150 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gComet" cx="32%" cy="26%" r="78%">
+          <stop offset="0" stop-color="var(--face-1)"/>
+          <stop offset=".6" stop-color="var(--rays-1)"/>
+          <stop offset="1" stop-color="var(--ink)"/>
+        </radialGradient>
+      </defs>
+      <circle cx="0" cy="0" r="18" fill="url(#gComet)"/>
+    </svg>
+  </div></div>
+
+  <div class="sun-pos"><div class="sun-size"><div class="sun-jelly"><div class="sun-press"><div class="sun-pulse">
+
+    <!-- слой 1: лучи — вращаются вокруг своей оси и светятся -->
+    <svg class="sun-svg sun-rays" viewBox="0 0 299.526 299.687" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- градиент задан в координатах фигуры и симметричен относительно
+             центра, поэтому вращение лучей его не «крутит» -->
+        <radialGradient id="gRays" gradientUnits="userSpaceOnUse"
+                        cx="149.763" cy="149.844" r="128">
+          <stop offset=".45" stop-color="var(--rays-1)"/>
+          <stop offset=".84" stop-color="var(--rays-2)"/>
+          <stop offset="1" stop-color="var(--rays-3)"/>
+        </radialGradient>
+      </defs>
+      <g transform="translate(149.763,149.844)">
+        <g class="rays">
+          <path transform="translate(-149.763,-149.844)" fill="url(#gRays)" d="M113.859 23.159C119.974 19.3131 124.866 26.0069 129.138 29.1707C138.279 35.9405 151.539 50.5332 162.272 53.6385C164.723 54.3586 167.308 54.5018 169.824 54.0564C179.87 52.2514 192.173 43.2922 201.634 39.073C204.857 37.6357 210.539 33.5266 214.075 34.7166C220.909 37.0162 220.224 46.8317 220.866 52.9344C222.158 65.2037 221.37 79.4074 226.687 90.8182C234.327 103.585 262.33 105.084 274.784 112.082C275.718 112.612 276.425 113.811 276.914 114.624C279.221 120.888 274.524 124.236 270.896 128.694C264.519 136.529 257.45 144.04 251.496 152.207C247.483 157.711 243.866 164.143 245.904 171.132C249.011 181.784 255.556 191.553 260.441 201.479C263.21 207.107 269.142 215.31 260.368 219.049C256.79 220.302 253.05 220.125 249.305 220.6C236.704 222.196 220.816 221.432 209.175 226.598C198.788 231.209 195.373 254.672 191.493 264.491C190.019 268.217 189.43 274.157 185.815 276.552C179.714 280.438 174.326 273.359 170.066 270.194C160.924 263.401 148.19 249.354 137.37 246.144C134.83 245.376 132.143 245.218 129.529 245.685C119.806 247.424 107.471 256.251 98.1105 260.514C93.1973 262.752 85.0563 269.355 80.7032 260.981C79.3464 258.371 79.4527 253.075 79.0568 250.013C77.3303 236.674 78.4163 221.721 72.9366 209.249C71.1006 205.072 66.0728 201.994 62.0275 200.351C50.2068 195.549 37.4043 193.109 25.6251 188.278C24.5317 187.829 23.7009 186.759 23.0704 185.806C19.6719 179.141 25.1272 175.71 28.8292 170.903C36.4839 160.959 49.4964 148.968 53.629 137.22C57.0954 127.371 44.9547 110.535 40.9171 101.649C39.4165 98.087 36.096 93.7203 35.1554 90.0652C32.3097 79.0004 42.7009 80.3139 48.6671 79.2723C62.1028 76.9267 88.3377 79.8658 96.5499 67.4754C101.763 59.6092 104.772 44.3636 108.067 35.2381C109.596 31.3069 110.017 25.5764 113.859 23.159ZM222.358 123.895C208.075 83.8356 164.025 62.9358 123.963 77.2117C83.9006 91.4876 62.9922 135.535 77.2628 175.599C91.5359 215.673 135.595 236.586 175.666 222.305C215.738 208.028 236.643 163.964 222.358 123.895Z"/>
+        </g>
+      </g>
+    </svg>
+
+    <!-- слой 2: лицо с вырезанными глазами; желейный объём — блик сверху
+         слева и мягкая тень снизу, обе внутри той же маски -->
+    <svg class="sun-svg sun-face" viewBox="0 0 299.526 299.687" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gFace" cx="36%" cy="26%" r="84%">
+          <stop offset="0" stop-color="var(--face-1)"/>
+          <stop offset=".5" stop-color="var(--face-2)"/>
+          <stop offset="1" stop-color="var(--face-3)"/>
+        </radialGradient>
+        <radialGradient id="gSpec">
+          <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
+          <stop offset=".5" stop-color="#fff" stop-opacity=".30"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gShade">
+          <stop offset="0" stop-color="#E9A268" stop-opacity=".30"/>
+          <stop offset="1" stop-color="#E9A268" stop-opacity="0"/>
+        </radialGradient>
+        <mask id="faceMask" maskUnits="userSpaceOnUse" x="0" y="0" width="299.526" height="299.687">
+          <circle cx="149.42" cy="149.85" r="70.11" fill="#fff"/>
+          <!-- Состояния глаз из макета (Figma 1310:16477).
+     Координаты — внутри svg солнышка. Точка кадра переводится как
+     local = banner − (130, −42): в тех кадрах группа солнышка ложится в банер
+     ровно один в один (255.526 × 1.172193 = 299.53, ширина viewBox). Проверено
+     по открытым глазам — макет даёт 125.7, в коде столько же.
+     Глаза вырезаны маской, поэтому сквозь них видно фон баннера. -->
+<g class="gaze">
+
+  <!-- открытые и полуприкрытые — один и тот же прямоугольник; у полуприкрытых
+       поднят низ, верх остаётся на месте (так в макете) -->
+  <g class="eyes eyes-bar">
+    <g transform="translate(125.705,133.480) rotate(9.34)">
+      <rect class="eye" x="-6.5" y="-18" width="13" height="36" rx="6.5" fill="#000"/>
+    </g>
+    <g transform="translate(156.300,138.520) rotate(9.34)">
+      <rect class="eye" x="-6.5" y="-18" width="13" height="36" rx="6.5" fill="#000"/>
+    </g>
+  </g>
+
+  <!-- полуприкрытые: тот же прямоугольник, низ поднят. Отдельной группой —
+       в последовательностях это самостоятельный кадр -->
+  <g class="eyes eyes-half">
+    <g transform="translate(125.705,133.480) rotate(9.34)">
+      <rect x="-6.5" y="-18" width="13" height="19" rx="6.5" fill="#000"/>
+    </g>
+    <g transform="translate(156.300,138.520) rotate(9.34)">
+      <rect x="-6.5" y="-18" width="13" height="19" rx="6.5" fill="#000"/>
+    </g>
+  </g>
+
+  <!-- закрытые: в макете это не укороченный прямоугольник, а две широкие
+       чёрточки, разведённые дальше друг от друга (38.5 против 31) -->
+  <g class="eyes eyes-closed">
+    <g transform="translate(128.5,125.5) rotate(9.34)">
+      <rect x="-10.7" y="-5.85" width="21.4" height="11.7" rx="5.85" fill="#000"/>
+    </g>
+    <g transform="translate(167,133.5) rotate(9.34)">
+      <rect x="-10.7" y="-5.85" width="21.4" height="11.7" rx="5.85" fill="#000"/>
+    </g>
+  </g>
+
+  <!-- довольные: обе дуги в одном контуре -->
+  <g class="eyes eyes-happy">
+    <path transform="translate(119.564,113.347)" fill="#000" d="M26.9245 24.7794C29.0237 18.3332 33.8529 6.54388 41.0886 9.65835C48.7681 12.9645 44.4857 24.2 41.0485 30.4709C40.6368 31.2217 39.5372 31.0919 39.2116 30.3C36.9387 24.7631 33.5501 23.2162 28.5407 25.9894C27.7029 26.453 26.6282 25.69 26.9245 24.7794ZM0.00946054 16.9689C0.973571 9.88297 4.2085 -1.6982 12.3493 0.209132C20.0188 2.00654 16.8939 14.3579 14.7497 20.7892C14.4466 21.6974 13.1284 21.6716 12.7302 20.8009C10.3508 15.593 6.70677 14.8221 1.58759 17.923C0.85492 18.3668 -0.10573 17.8176 0.00946054 16.9689Z"/>
+  </g>
+
+  <!-- звёздочки: один контур, поставлен дважды -->
+  <g class="eyes eyes-stars">
+    <path transform="translate(106.045,110.169)" fill="#000" d="M11.9847 0.759031C12.236 -0.25301 13.6745 -0.253011 13.9258 0.75903L16.285 10.2611C16.3932 10.6967 16.7784 11.0069 17.227 11.0197L24.9373 11.2397C25.8 11.2643 26.2284 12.2968 25.6366 12.925L18.9997 19.9695C18.7739 20.2091 18.6805 20.5446 18.7501 20.8664L21.0365 31.4468C21.2457 32.4151 20.0708 33.0656 19.3612 32.3743L13.6531 26.8134C13.2648 26.4351 12.6458 26.4351 12.2575 26.8134L6.5493 32.3743C5.83972 33.0656 4.66481 32.4151 4.87405 31.4468L7.16045 20.8664C7.23 20.5446 7.13666 20.2091 6.91086 19.9695L0.273935 12.925C-0.317902 12.2968 0.11055 11.2643 0.973263 11.2397L8.6835 11.0197C9.13218 11.0069 9.51736 10.6967 9.62552 10.2611L11.9847 0.759031Z"/>
+    <path transform="translate(134.045,120.669)" fill="#000" d="M11.9847 0.759031C12.236 -0.25301 13.6745 -0.253011 13.9258 0.75903L16.285 10.2611C16.3932 10.6967 16.7784 11.0069 17.227 11.0197L24.9373 11.2397C25.8 11.2643 26.2284 12.2968 25.6366 12.925L18.9997 19.9695C18.7739 20.2091 18.6805 20.5446 18.7501 20.8664L21.0365 31.4468C21.2457 32.4151 20.0708 33.0656 19.3612 32.3743L13.6531 26.8134C13.2648 26.4351 12.6458 26.4351 12.2575 26.8134L6.5493 32.3743C5.83972 33.0656 4.66481 32.4151 4.87405 31.4468L7.16045 20.8664C7.23 20.5446 7.13666 20.2091 6.91086 19.9695L0.273935 12.925C-0.317902 12.2968 0.11055 11.2643 0.973263 11.2397L8.6835 11.0197C9.13218 11.0069 9.51736 10.6967 9.62552 10.2611L11.9847 0.759031Z"/>
+  </g>
+
+  <!-- плачущие: тот же контур зеркально, и слеза под правым глазом.
+       слеза вынесена отдельно — в печальной реакции она набегает позже -->
+  <g class="eyes eyes-sad">
+    <path transform="translate(130.6,112) scale(-1,1)" fill="#000" d="M0.183454 3.24112C0.89002 0.790537 3.43018 -0.561064 5.85728 0.222568L23.7938 6.01358C26.2208 6.79727 27.6161 9.41937 26.91 11.87C26.2037 14.3207 23.6633 15.6719 21.2362 14.8886L16.9715 13.5116L15.6981 21.2577C15.1151 24.7997 11.7704 27.1988 8.22838 26.6161C4.68649 26.0332 2.28757 22.6893 2.86998 19.1474L4.28404 10.5575C4.34412 10.1924 4.43471 9.83968 4.55064 9.50089L3.29967 9.09757C0.872491 8.31391 -0.522836 5.69191 0.183454 3.24112Z"/>
+    <path transform="translate(139,115)" fill="#000" d="M0.183454 3.24112C0.89002 0.790537 3.43018 -0.561064 5.85728 0.222568L23.7938 6.01358C26.2208 6.79727 27.6161 9.41937 26.91 11.87C26.2037 14.3207 23.6633 15.6719 21.2362 14.8886L16.9715 13.5116L15.6981 21.2577C15.1151 24.7997 11.7704 27.1988 8.22838 26.6161C4.68649 26.0332 2.28757 22.6893 2.86998 19.1474L4.28404 10.5575C4.34412 10.1924 4.43471 9.83968 4.55064 9.50089L3.29967 9.09757C0.872491 8.31391 -0.522836 5.69191 0.183454 3.24112Z"/>
+  </g>
+  <g class="eyes eyes-tear">
+    <path transform="translate(156,150)" fill="#000" d="M6.07523 0.218001C6.29057 -0.0592119 6.68846 -0.0778255 6.90881 0.195421C7.22466 0.594955 7.54294 0.992272 7.86369 1.38737C9.70937 3.64054 12.9604 7.64964 12.9995 10.744C13.022 12.528 12.2956 14.3194 11.1346 15.5892C9.93686 16.9083 8.29156 17.6582 6.56942 17.6699C5.18295 17.6915 3.82722 17.234 2.70492 16.366C1.28683 15.2674 0.380957 13.7222 0.0655571 11.8688C-0.0152432 11.3939 -0.0306559 10.3197 0.0724366 9.83938C0.699549 6.9182 2.81565 4.33576 4.55945 2.0774C5.0419 1.45262 5.59278 0.839091 6.07523 0.218001Z"/>
+  </g>
+
+  <!-- ====== позы реакции (Figma 1380:17010) ======
+       солнышко замечает число: глаза округляются, потом щурятся и
+       превращаются в искры. Размеры и места сняты по кадрам раскадровки. -->
+
+  <!-- 2: округлились -->
+  <g class="eyes eyes-wide">
+    <rect x="118" y="124" width="15.424" height="17.898" rx="7.712" fill="#000"/>
+    <rect x="149" y="129.04" width="15.424" height="17.898" rx="7.712" fill="#000"/>
+  </g>
+
+  <!-- 3: прищурились -->
+  <g class="eyes eyes-squint">
+    <rect x="119.7" y="127" width="14.256" height="10.793" rx="5.397" fill="#000"/>
+    <rect x="150.7" y="132.04" width="14.256" height="10.793" rx="5.397" fill="#000"/>
+  </g>
+
+  <!-- 4: сузились в чёрточки; контур в макете растянут по вертикали,
+       поэтому масштаб по осям разный -->
+  <g class="eyes eyes-dash">
+    <g transform="translate(119,127) scale(1.0066,1.818)"><path fill="#000" d="M0 4.4C0 1.96995 1.96995 0 4.4 0L14.4367 0C16.8668 0 18.8367 1.96995 18.8367 4.4C18.8367 6.83005 16.8668 8.8 14.4367 8.8H4.4C1.96995 8.8 0 6.83005 0 4.4Z
+M30.8367 4.4C30.8367 1.96995 32.8067 0 35.2367 0H45.2735C47.7035 0 49.6735 1.96995 49.6735 4.4C49.6735 6.83005 47.7035 8.8 45.2735 8.8H35.2367C32.8067 8.8 30.8367 6.83005 30.8367 4.4Z"/></g>
+  </g>
+
+  <!-- 5 и 6: искры. Контур снят вместе с диском лица, поэтому кладём его
+       в тот же угол диска — (79.285, 79.743) -->
+  <g class="eyes eyes-gem">
+    <g transform="translate(79.285,79.743)"><path fill="#000" fill-rule="evenodd" d="M67.8636 49.9094C67.3623 49.1726 66.3323 49.0331 65.6526 49.6096L62.8196 52.0139C62.602 52.1984 62.3358 52.3169 62.053 52.3557L54.3763 53.4084C53.0008 53.597 52.5975 55.3919 53.7601 56.1506L60.4661 60.5246C60.5661 60.5898 60.6588 60.6672 60.7405 60.7541L63.9202 64.1359C64.4092 64.6556 65.1966 64.7589 65.803 64.383L68.6058 62.6447C68.7842 62.5341 68.9837 62.4614 69.1917 62.4328L76.9866 61.3644C78.3622 61.1758 78.7656 59.3798 77.6028 58.6213L70.9974 54.3137C70.8312 54.2052 70.6871 54.0657 70.5755 53.9016L67.8636 49.9094Z M37.0052 42.1369C36.5039 41.3999 35.474 41.2605 34.7943 41.8371L31.9612 44.2404C31.7436 44.425 31.4773 44.5444 31.1946 44.5832L23.5169 45.6349C22.1418 45.8238 21.7384 47.6195 22.9007 48.3781L29.6077 52.7521C29.7075 52.8172 29.7996 52.8939 29.8812 52.9807L33.0618 56.3625C33.5508 56.8825 34.338 56.9866 34.9446 56.6105L37.7464 54.8723C37.925 54.7615 38.1251 54.6889 38.3333 54.6603L46.1282 53.591C47.5037 53.4022 47.9065 51.6073 46.7435 50.8488L40.139 46.5412C39.9727 46.4327 39.8287 46.2923 39.7171 46.1281L37.0052 42.1369Z"/></g>
+  </g>
+  <g class="eyes eyes-spark">
+    <g transform="translate(79.285,79.743)"><path fill="#000" fill-rule="evenodd" d="M71.268 39.0774C71.3227 37.4225 69.0496 36.9121 68.392 38.4319L62.8539 51.2366C62.6455 51.7179 62.1998 52.055 61.6801 52.1262L54.4076 53.1233C53.0323 53.3119 52.6284 55.1067 53.7904 55.8655L59.9408 59.8762C60.38 60.1628 60.6369 60.6588 60.6195 61.1829L60.1557 75.1262C60.1008 76.7813 62.375 77.2917 63.0326 75.7717L68.5717 62.968C68.78 62.4866 69.2249 62.1488 69.7445 62.0774L77.018 61.0794C78.3932 60.8905 78.7966 59.0957 77.6342 58.3372L71.4848 54.3264C71.0454 54.0399 70.7877 53.5451 70.8051 53.0208L71.268 39.0774Z M40.3774 31.5891C40.432 29.9342 38.159 29.4247 37.5014 30.9446L31.9623 43.7483C31.7539 44.2296 31.3091 44.5667 30.7895 44.638L23.517 45.636C22.1416 45.8246 21.7374 47.6195 22.8998 48.3782L29.0502 52.388C29.4896 52.6746 29.7474 53.1712 29.7299 53.6956L29.2651 67.638C29.21 69.2932 31.4844 69.8034 32.142 68.2835L37.6811 55.4798C37.8894 54.9984 38.3343 54.6605 38.8539 54.5891L46.1274 53.5911C47.5027 53.4022 47.9055 51.6073 46.7426 50.8489L40.5942 46.8391C40.1547 46.5525 39.897 46.0568 39.9145 45.5325L40.3774 31.5891Z"/></g>
+  </g>
+
+</g>
+        </mask>
+      </defs>
+      <g mask="url(#faceMask)">
+        <circle cx="149.42" cy="149.85" r="70.11" fill="url(#gFace)"/>
+        <ellipse cx="152" cy="214" rx="60" ry="32" fill="url(#gShade)"/>
+        <ellipse cx="119" cy="112" rx="34" ry="20" fill="url(#gSpec)"
+                 transform="rotate(-24 119 112)"/>
+      </g>
+    </svg>
+
+    <!-- Луна — второй персонаж. Живёт в том же слое, что и солнышко, поэтому
+     летит, растёт, пружинит и реагирует по тем же дорожкам.
+     Координаты — внутри фигуры луны: точка кадра переводится как
+     local = banner − (196.0, 4.175), размер фигуры 167.14 × 207.829
+     (Figma 1310:16478). Классы поз те же, что у солнышка, — анимации общие. -->
+<svg class="moon-svg" viewBox="0 0 167.14 207.829" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gMoon" cx="34%" cy="22%" r="86%">
+      <stop offset="0" stop-color="var(--face-1)"/>
+      <stop offset=".5" stop-color="var(--face-2)"/>
+      <stop offset="1" stop-color="var(--face-3)"/>
+    </radialGradient>
+    <mask id="moonMask" maskUnits="userSpaceOnUse" x="0" y="0" width="167.14" height="207.829">
+      <path fill="#fff" d="M13.3765 12.6807C32.7484 2.1694 54.9436 -1.96402 76.8033 0.869167C99.1657 3.76319 119.963 13.9138 136.004 29.7637C149.792 43.2972 159.536 60.4054 164.142 79.167C168.749 97.9287 168.035 117.602 162.082 135.979C156.128 154.355 145.17 170.707 130.438 183.199C115.706 195.692 97.782 203.831 78.6793 206.702C56.8754 209.927 34.608 206.192 15.0465 196.029L15.0611 196.114C13.7705 195.446 12.6856 194.438 11.9244 193.2C11.1632 191.962 10.7542 190.539 10.7408 189.086C10.7275 187.633 11.1109 186.203 11.8492 184.951C12.5875 183.7 13.6531 182.673 14.9312 181.981C28.8992 174.336 40.5306 163.043 48.5855 149.307C56.6404 135.571 60.8176 119.906 60.6715 103.981C60.5252 88.0568 56.0614 72.4685 47.7555 58.8789C39.4495 45.2895 27.6126 34.2068 13.5064 26.8125C12.2157 26.1443 11.1309 25.1367 10.3697 23.8985C9.60872 22.6603 9.19949 21.2383 9.18612 19.7852C9.17277 18.3319 9.55528 16.9021 10.2935 15.6504C11.0318 14.3988 12.0983 13.3719 13.3765 12.6807Z"/>
+      <g class="gaze">
+
+        <!-- открытые и полуприкрытые: прямоугольник 11.4 × 32.9 с наклоном 9.34°,
+             как у солнышка, только мельче и глаза ближе друг к другу -->
+        <g class="eyes eyes-bar">
+          <g transform="translate(75.72,84.22) rotate(9.34)">
+            <rect class="eye" x="-5.7" y="-16.45" width="11.4" height="32.9" rx="5.7" fill="#000"/>
+          </g>
+          <g transform="translate(98.72,88.92) rotate(9.34)">
+            <rect class="eye" x="-5.7" y="-16.45" width="11.4" height="32.9" rx="5.7" fill="#000"/>
+          </g>
+        </g>
+        <g class="eyes eyes-half">
+          <g transform="translate(75.72,84.22) rotate(9.34)">
+            <rect x="-5.7" y="-16.45" width="11.4" height="17.4" rx="5.7" fill="#000"/>
+          </g>
+          <g transform="translate(98.72,88.92) rotate(9.34)">
+            <rect x="-5.7" y="-16.45" width="11.4" height="17.4" rx="5.7" fill="#000"/>
+          </g>
+        </g>
+
+        <!-- закрытые: контур из макета; узел того кадра уже фигуры на 9.184 -->
+        <g class="eyes eyes-closed">
+          <g transform="translate(9.184,0)"><path fill="#000" d="M96.2093 71.2178C92.6314 70.8099 89.3019 73.3668 88.7728 76.9288C88.244 80.4907 90.7156 83.7097 94.2933 84.1182L103.282 85.1436C106.86 85.5518 110.189 82.9947 110.718 79.4327C111.247 75.8705 108.776 72.6515 105.198 72.2432L96.2093 71.2178Z M66.1956 66.1875C62.6178 65.7796 59.2882 68.3364 58.7591 71.8985C58.2303 75.4604 60.702 78.6795 64.2796 79.0879L73.2679 80.1133C76.8459 80.5215 80.1752 77.9644 80.7044 74.4024C81.2335 70.8402 78.762 67.6212 75.1839 67.2129L66.1956 66.1875Z"/></g>
+        </g>
+
+        <!-- довольные и искры: контуры из макета, уже в координатах фигуры -->
+        <g class="eyes eyes-happy">
+          <path fill="#000" d="M105.206 75.1153C97.616 73.0048 94.4204 85.3384 93.2096 92.0088C93.0389 92.9509 94.2066 93.5623 94.9742 92.9903C99.5638 89.5669 103.131 90.6416 106.13 95.8213C106.559 96.5622 107.665 96.5436 107.972 95.7442C110.532 89.0671 113.261 77.3557 105.206 75.1153Z M77.7506 70.6641C69.4271 69.8723 67.7835 81.7845 67.7838 88.9356C67.7842 89.792 68.8101 90.2065 69.4762 89.668C74.1305 85.9051 77.845 86.1773 80.9049 91.0166C81.4168 91.8256 82.7258 91.6739 82.9039 90.7334C84.1613 84.0718 85.5926 71.4109 77.7506 70.6641Z"/>
+        </g>
+        <g class="eyes eyes-spark">
+          <path fill="#000" d="M113.27 82.2647C113.285 80.6087 111 80.1535 110.379 81.6885L105.152 94.6241C104.955 95.1099 104.519 95.4581 104.002 95.542L96.7545 96.7158C95.3842 96.9381 95.0247 98.7427 96.2057 99.4727L102.45 103.333C102.896 103.609 103.166 104.097 103.162 104.622L103.036 118.572C103.021 120.228 105.306 120.682 105.926 119.147L111.154 106.213C111.35 105.727 111.788 105.379 112.305 105.295L119.552 104.121C120.923 103.899 121.282 102.094 120.101 101.364L113.856 97.5039C113.41 97.2282 113.14 96.7393 113.144 96.2149L113.27 82.2647Z M82.2076 75.5293C82.2225 73.8734 79.9378 73.4182 79.317 74.9532L74.0895 87.8887C73.8928 88.3745 73.4564 88.7227 72.9391 88.8067L65.692 89.9805C64.3217 90.2028 63.9622 92.0074 65.1432 92.7373L71.3873 96.5977C71.8336 96.8735 72.1039 97.3621 72.0992 97.8867L71.9732 111.837C71.9588 113.492 74.2431 113.947 74.8639 112.412L80.0914 99.4776C80.288 98.9914 80.7251 98.6436 81.2428 98.5596L88.4898 97.3858C89.86 97.1635 90.2192 95.3591 89.0387 94.6289L82.7936 90.7686C82.3474 90.4928 82.0771 90.0039 82.0816 89.4795L82.2076 75.5293Z"/>
+        </g>
+
+        <!-- плачущие: контур лежит в своём узле на (257, 73) кадра -->
+        <g class="eyes eyes-sad">
+          <g transform="translate(61,68.825)"><path fill="#000" d="M30.5208 5.02706C31.1245 2.93274 33.2953 1.7773 35.3695 2.44698L50.6966 7.3962C52.7707 8.06597 53.9633 10.3068 53.3597 12.4011C52.756 14.4953 50.5851 15.6496 48.5111 14.9802L44.8665 13.8034L43.7777 20.4226C43.2795 23.4494 40.4217 25.4995 37.3949 25.0017C34.368 24.5034 32.3177 21.6457 32.8158 18.6189L34.0238 11.279C34.0751 10.9672 34.1523 10.666 34.2513 10.3767L33.183 10.0319C31.1088 9.36223 29.9172 7.1214 30.5208 5.02706Z M20.1019 0.000690292C22.2809 -0.0396765 24.0248 1.69544 23.9964 3.87471C23.9676 6.05373 22.1773 7.85352 19.9984 7.89424L18.8773 7.91378C18.8883 8.21937 18.8745 8.53019 18.8333 8.84346L17.8656 16.2185C17.4661 19.26 14.6756 21.4019 11.6341 21.0026C8.59273 20.603 6.45053 17.8136 6.84995 14.7722L7.72397 8.12178L3.89487 8.19307C1.71596 8.23343 -0.0278655 6.5001 0.000337325 4.321C0.028993 2.14192 1.81854 0.342365 3.99741 0.301472L20.1019 0.000690292Z"/></g>
+        </g>
+        <g class="eyes eyes-tear">
+          <g transform="translate(61,68.825)"><path fill="#000" d="M48.1917 34.4675C48.3758 34.231 48.7155 34.2156 48.9037 34.4489C49.1735 34.7903 49.446 35.1299 49.7201 35.4675C51.2973 37.3929 54.0751 40.8185 54.1087 43.4626C54.128 44.987 53.507 46.5181 52.515 47.6032C51.4914 48.7305 50.0853 49.3715 48.6136 49.3815C47.4288 49.4 46.2699 49.0091 45.3109 48.2673C44.0992 47.3286 43.3256 46.008 43.056 44.4245C42.987 44.0188 42.9738 43.1007 43.0619 42.6901C43.5977 40.194 45.4057 37.9871 46.8958 36.0573C47.3081 35.5234 47.7795 34.9982 48.1917 34.4675Z"/></g>
+        </g>
+
+        <!-- кадры перехода. В раскадровке луны их нет, поэтому они собраны по
+             солнышку: ромбики ложатся одним сдвигом (проверено по искрам —
+             оба глаза сходятся), а остальные три подогнаны под её посадку -->
+        <g class="eyes eyes-wide">
+          <rect x="69.0" y="76.0" width="13.5" height="15.7" rx="6.75" fill="#000"/>
+          <rect x="92.0" y="80.7" width="13.5" height="15.7" rx="6.75" fill="#000"/>
+        </g>
+        <g class="eyes eyes-squint">
+          <rect x="69.5" y="79.0" width="12.5" height="9.5" rx="4.75" fill="#000"/>
+          <rect x="92.5" y="83.7" width="12.5" height="9.5" rx="4.75" fill="#000"/>
+        </g>
+        <g class="eyes eyes-dash">
+          <rect x="67.0" y="79.0" width="17.5" height="10.3" rx="5" fill="#000"/>
+          <rect x="90.0" y="83.7" width="17.5" height="10.3" rx="5" fill="#000"/>
+        </g>
+        <!-- звёздочки: контур солнышка, поставленный в посадку искр луны -->
+        <g class="eyes eyes-stars">
+          <path transform="translate(64.135,77.349)" fill="#000" d="M11.9847 0.759031C12.236 -0.25301 13.6745 -0.253011 13.9258 0.75903L16.285 10.2611C16.3932 10.6967 16.7784 11.0069 17.227 11.0197L24.9373 11.2397C25.8 11.2643 26.2284 12.2968 25.6366 12.925L18.9997 19.9695C18.7739 20.2091 18.6805 20.5446 18.7501 20.8664L21.0365 31.4468C21.2457 32.4151 20.0708 33.0656 19.3612 32.3743L13.6531 26.8134C13.2648 26.4351 12.6458 26.4351 12.2575 26.8134L6.5493 32.3743C5.83972 33.0656 4.66481 32.4151 4.87405 31.4468L7.16045 20.8664C7.23 20.5446 7.13666 20.2091 6.91086 19.9695L0.273935 12.925C-0.317902 12.2968 0.11055 11.2643 0.973263 11.2397L8.6835 11.0197C9.13218 11.0069 9.51736 10.6967 9.62552 10.2611L11.9847 0.759031Z"/>
+          <path transform="translate(95.195,84.069)" fill="#000" d="M11.9847 0.759031C12.236 -0.25301 13.6745 -0.253011 13.9258 0.75903L16.285 10.2611C16.3932 10.6967 16.7784 11.0069 17.227 11.0197L24.9373 11.2397C25.8 11.2643 26.2284 12.2968 25.6366 12.925L18.9997 19.9695C18.7739 20.2091 18.6805 20.5446 18.7501 20.8664L21.0365 31.4468C21.2457 32.4151 20.0708 33.0656 19.3612 32.3743L13.6531 26.8134C13.2648 26.4351 12.6458 26.4351 12.2575 26.8134L6.5493 32.3743C5.83972 33.0656 4.66481 32.4151 4.87405 31.4468L7.16045 20.8664C7.23 20.5446 7.13666 20.2091 6.91086 19.9695L0.273935 12.925C-0.317902 12.2968 0.11055 11.2643 0.973263 11.2397L8.6835 11.0197C9.13218 11.0069 9.51736 10.6967 9.62552 10.2611L11.9847 0.759031Z"/>
+        </g>
+        <g class="eyes eyes-gem">
+          <g transform="translate(42.375,43.943)">
+            <path fill="#000" fill-rule="evenodd" d="M67.8636 49.9094C67.3623 49.1726 66.3323 49.0331 65.6526 49.6096L62.8196 52.0139C62.602 52.1984 62.3358 52.3169 62.053 52.3557L54.3763 53.4084C53.0008 53.597 52.5975 55.3919 53.7601 56.1506L60.4661 60.5246C60.5661 60.5898 60.6588 60.6672 60.7405 60.7541L63.9202 64.1359C64.4092 64.6556 65.1966 64.7589 65.803 64.383L68.6058 62.6447C68.7842 62.5341 68.9837 62.4614 69.1917 62.4328L76.9866 61.3644C78.3622 61.1758 78.7656 59.3798 77.6028 58.6213L70.9974 54.3137C70.8312 54.2052 70.6871 54.0657 70.5755 53.9016L67.8636 49.9094Z M37.0052 42.1369C36.5039 41.3999 35.474 41.2605 34.7943 41.8371L31.9612 44.2404C31.7436 44.425 31.4773 44.5444 31.1946 44.5832L23.5169 45.6349C22.1418 45.8238 21.7384 47.6195 22.9007 48.3781L29.6077 52.7521C29.7075 52.8172 29.7996 52.8939 29.8812 52.9807L33.0618 56.3625C33.5508 56.8825 34.338 56.9866 34.9446 56.6105L37.7464 54.8723C37.925 54.7615 38.1251 54.6889 38.3333 54.6603L46.1282 53.591C47.5037 53.4022 47.9065 51.6073 46.7435 50.8488L40.139 46.5412C39.9727 46.4327 39.8287 46.2923 39.7171 46.1281L37.0052 42.1369Z"/>
+          </g>
+        </g>
+
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#moonMask)">
+    <path fill="url(#gMoon)" d="M13.3765 12.6807C32.7484 2.1694 54.9436 -1.96402 76.8033 0.869167C99.1657 3.76319 119.963 13.9138 136.004 29.7637C149.792 43.2972 159.536 60.4054 164.142 79.167C168.749 97.9287 168.035 117.602 162.082 135.979C156.128 154.355 145.17 170.707 130.438 183.199C115.706 195.692 97.782 203.831 78.6793 206.702C56.8754 209.927 34.608 206.192 15.0465 196.029L15.0611 196.114C13.7705 195.446 12.6856 194.438 11.9244 193.2C11.1632 191.962 10.7542 190.539 10.7408 189.086C10.7275 187.633 11.1109 186.203 11.8492 184.951C12.5875 183.7 13.6531 182.673 14.9312 181.981C28.8992 174.336 40.5306 163.043 48.5855 149.307C56.6404 135.571 60.8176 119.906 60.6715 103.981C60.5252 88.0568 56.0614 72.4685 47.7555 58.8789C39.4495 45.2895 27.6126 34.2068 13.5064 26.8125C12.2157 26.1443 11.1309 25.1367 10.3697 23.8985C9.60872 22.6603 9.19949 21.2383 9.18612 19.7852C9.17277 18.3319 9.55528 16.9021 10.2935 15.6504C11.0318 14.3988 12.0983 13.3719 13.3765 12.6807Z"/>
+  </g>
+</svg>
+
+  </div></div></div></div></div>
+
+  <!-- звёздочка луны: висит на ниточке в своей точке кадра -->
+  <div class="star"><svg viewBox="0 0 29 45" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" d="M14.4977 17C14.9178 17.0001 15.3284 17.1252 15.6774 17.3594C16.0264 17.5936 16.298 17.9264 16.4576 18.3154L19.4049 25.457L27.0475 26.0742C27.4656 26.1096 27.8643 26.2674 28.193 26.5283C28.5218 26.7894 28.7665 27.1425 28.8961 27.542C29.0256 27.9414 29.0343 28.37 28.9215 28.7744C28.8086 29.179 28.579 29.5409 28.2614 29.8154L28.2692 29.8145L22.4401 34.8486L24.2164 42.3779C24.3143 42.7865 24.2884 43.2151 24.1432 43.6094C23.998 44.0035 23.7394 44.3456 23.4 44.5928C23.0604 44.84 22.6546 44.9812 22.235 44.998C21.8155 45.0148 21.4008 44.9066 21.0426 44.6875L14.5006 40.6582L7.95471 44.6875C7.5965 44.9054 7.18212 45.0125 6.7633 44.9951C6.34451 44.9776 5.94006 44.8368 5.6012 44.5898C5.26238 44.3429 5.00421 44.0009 4.85901 43.6074C4.71388 43.2139 4.68762 42.786 4.78479 42.3779L6.56799 34.8486L0.737914 29.8145C0.421036 29.5403 0.191593 29.1781 0.0787343 28.7744C-0.0339782 28.3708 -0.025531 27.9427 0.103148 27.5439C0.231942 27.1449 0.475745 26.7927 0.803344 26.5312C1.13094 26.2698 1.52857 26.111 1.94592 26.0742L9.5885 25.457L12.5367 18.3154C12.6963 17.9264 12.968 17.5936 13.317 17.3594C13.6661 17.1251 14.0774 17 14.4977 17Z M14.5006 0C15.3289 0.000169027 16.0006 0.671677 16.0006 1.5V12.5C16.0006 13.3283 15.3289 13.9998 14.5006 14C13.6722 14 13.0006 13.3284 13.0006 12.5V1.5C13.0006 0.671573 13.6722 0 14.5006 0Z"/></svg></div>
+
+  <div class="num n2"><i><svg viewBox="0 0 53.2586 63.9737" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" d="M26.3399 0.198916C34.2931 -0.581741 40.3385 0.998202 44.458 3.83735C48.5639 6.66748 50.8551 10.811 51.2451 15.4065C52.0247 24.5955 45.1458 36.0673 28.6588 42.0522C27.9557 42.3077 27.5924 43.0854 27.8474 43.7887C28.1028 44.4921 28.8805 44.855 29.5839 44.6C33.2622 43.2648 36.5216 41.6492 39.365 39.8312C39.4075 39.8135 39.4507 39.7942 39.492 39.7717C42.7342 38.0068 45.7982 38.2278 48.1983 39.5427C50.6383 40.8801 52.4679 43.3932 53.0571 46.3193C53.6397 49.2143 53.0102 52.5291 50.492 55.5034C47.9577 58.4961 43.4272 61.2345 36.0759 62.7194C27.985 64.3534 21.5365 64.2916 16.813 63.1072C12.0882 61.9221 9.21121 59.6553 7.95451 56.958C6.70407 54.2733 6.90443 50.8299 9.03055 46.9466C11.1613 43.0553 15.1848 38.8242 21.3396 34.774C21.3423 34.7721 21.3448 34.7693 21.3475 34.7674C25.4641 33.1525 30.0332 30.5418 35.0158 26.7493C35.6114 26.2959 35.7272 25.4456 35.2739 24.85C34.8204 24.255 33.97 24.14 33.3746 24.5932C23.1399 32.3833 15.1928 34.6759 9.73071 34.0222C4.38926 33.3824 1.19173 29.9019 0.271308 25.3635C-1.58534 16.2067 5.97783 2.19805 26.3399 0.198916Z"/></svg></i></div>
+  <div class="num n0"><i><svg viewBox="0 0 43.3392 61.998" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" fill-rule="evenodd" clip-rule="evenodd" d="M25.008 1.05035C29.037 -0.490813 32.4665 -0.0333989 34.9162 0.523989C37.3326 1.07403 39.1906 2.46393 40.57 4.54297C43.393 8.79851 43.901 15.167 42.7988 23.2019C41.7053 31.173 38.8119 39.7815 34.6673 46.8432C30.4992 53.945 25.1976 59.2643 19.4071 61.0304C15.6672 62.1709 12.5838 62.2394 10.0876 61.5687C7.60429 60.9013 5.59556 59.4752 4.033 57.4426C0.867644 53.3244 -0.463307 46.7011 0.142523 39.1861C0.745175 31.7126 3.25102 23.5708 7.48561 16.5905C11.7213 9.60879 17.6344 3.87114 25.008 1.05035ZM23.7711 24.2618C23.0237 24.234 22.395 24.8027 22.3662 25.5322C22.2122 29.4348 20.8734 37.0396 20.2113 40.3997C20.0704 41.1164 20.5525 41.8097 21.2868 41.9476C22.021 42.0851 22.7314 41.6158 22.8729 40.8993C23.5302 37.5635 24.9097 29.7662 25.0728 25.6329C25.1013 24.9035 24.5185 24.2899 23.7711 24.2618Z"/></svg></i></div>
+
+  <div class="fire"><svg viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
+    <path fill="var(--ink)" d="M9.80745 1.05843C9.7535 1.0171 9.69136 0.990319 9.62627 0.980347C9.56118 0.970376 9.49504 0.977505 9.43343 1.00113C9.37182 1.02476 9.31655 1.06419 9.27227 1.11611C9.22799 1.16802 9.19601 1.2309 9.17901 1.29943L8.32884 4.73549L6.99235 3.53899C6.94746 3.49877 6.89536 3.46921 6.83947 3.45226C6.78358 3.43532 6.72517 3.43137 6.66809 3.44069C6.61102 3.45 6.55657 3.47236 6.50834 3.50629C6.46011 3.54023 6.41919 3.58497 6.38828 3.63756C5.41167 5.29857 4.97916 6.92496 5.10448 8.47101C5.20923 9.76339 5.78226 10.9645 6.69749 11.8102C7.61272 12.6559 8.79518 13.0768 9.98475 12.9804C11.1743 12.884 12.2736 12.2781 13.0406 11.2961C13.8077 10.314 14.1798 9.03626 14.0751 7.74388C13.8082 4.45187 11.0016 1.97328 9.80745 1.05843ZM12.4804 8.39373C12.4266 9.04393 12.1904 9.65799 11.8035 10.1532C11.4165 10.6485 10.8975 11.0012 10.3162 11.1638C10.2941 11.1698 10.2716 11.1736 10.2489 11.1754C10.1466 11.1836 10.0447 11.1498 9.96332 11.0807C9.88197 11.0115 9.82714 10.912 9.80969 10.802C9.79225 10.6919 9.81347 10.5793 9.86915 10.4865C9.92482 10.3937 10.0109 10.3275 10.1103 10.3009C10.9423 10.078 11.5958 9.24131 11.6645 8.31048C11.6733 8.19314 11.7246 8.08499 11.8073 8.00982C11.8901 7.93464 11.9973 7.89861 12.1056 7.90965C12.2138 7.92068 12.3142 7.97788 12.3846 8.06865C12.455 8.15943 12.4896 8.27635 12.4809 8.39369L12.4804 8.39373Z"/></svg></div>
+  <div class="lbl"><i>  новый рекорд!
+ так держать</i></div>
+
+  <div class="inner"></div>
+</div>
+
+<script>
+function bindPress(st) {
+  var layer = st.querySelector('.sun-press');
+  st.addEventListener('pointerdown', function () {
+    layer.classList.remove('press');
+    void layer.offsetWidth;                 // перезапуск анимации
+    layer.classList.add('press');
+  });
+  layer.addEventListener('animationend', function (e) {
+    if (e.animationName === 'sunPress') layer.classList.remove('press');
+  });
+}
+document.querySelectorAll('.stage').forEach(bindPress);
+</script>
+</body>
+</html>

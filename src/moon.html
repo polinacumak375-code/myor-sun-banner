@@ -1,0 +1,89 @@
+<!-- Луна — второй персонаж. Живёт в том же слое, что и солнышко, поэтому
+     летит, растёт, пружинит и реагирует по тем же дорожкам.
+     Координаты — внутри фигуры луны: точка кадра переводится как
+     local = banner − (196.0, 4.175), размер фигуры 167.14 × 207.829
+     (Figma 1310:16478). Классы поз те же, что у солнышка, — анимации общие. -->
+<svg class="moon-svg" viewBox="0 0 167.14 207.829" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gMoon" cx="34%" cy="22%" r="86%">
+      <stop offset="0" stop-color="var(--face-1)"/>
+      <stop offset=".5" stop-color="var(--face-2)"/>
+      <stop offset="1" stop-color="var(--face-3)"/>
+    </radialGradient>
+    <mask id="moonMask" maskUnits="userSpaceOnUse" x="0" y="0" width="167.14" height="207.829">
+      <path fill="#fff" d="MOON_PATH"/>
+      <g class="gaze">
+
+        <!-- открытые и полуприкрытые: прямоугольник 11.4 × 32.9 с наклоном 9.34°,
+             как у солнышка, только мельче и глаза ближе друг к другу -->
+        <g class="eyes eyes-bar">
+          <g transform="translate(75.72,84.22) rotate(9.34)">
+            <rect class="eye" x="-5.7" y="-16.45" width="11.4" height="32.9" rx="5.7" fill="#000"/>
+          </g>
+          <g transform="translate(98.72,88.92) rotate(9.34)">
+            <rect class="eye" x="-5.7" y="-16.45" width="11.4" height="32.9" rx="5.7" fill="#000"/>
+          </g>
+        </g>
+        <g class="eyes eyes-half">
+          <g transform="translate(75.72,84.22) rotate(9.34)">
+            <rect x="-5.7" y="-16.45" width="11.4" height="17.4" rx="5.7" fill="#000"/>
+          </g>
+          <g transform="translate(98.72,88.92) rotate(9.34)">
+            <rect x="-5.7" y="-16.45" width="11.4" height="17.4" rx="5.7" fill="#000"/>
+          </g>
+        </g>
+
+        <!-- закрытые: контур из макета; узел того кадра уже фигуры на 9.184 -->
+        <g class="eyes eyes-closed">
+          <g transform="translate(9.184,0)"><path fill="#000" d="MOON_CLOSED"/></g>
+        </g>
+
+        <!-- довольные и искры: контуры из макета, уже в координатах фигуры -->
+        <g class="eyes eyes-happy">
+          <path fill="#000" d="MOON_HAPPY"/>
+        </g>
+        <g class="eyes eyes-spark">
+          <path fill="#000" d="MOON_SPARK"/>
+        </g>
+
+        <!-- плачущие: контур лежит в своём узле на (257, 73) кадра -->
+        <g class="eyes eyes-sad">
+          <g transform="translate(61,68.825)"><path fill="#000" d="MOON_SAD"/></g>
+        </g>
+        <g class="eyes eyes-tear">
+          <g transform="translate(61,68.825)"><path fill="#000" d="MOON_TEAR"/></g>
+        </g>
+
+        <!-- кадры перехода. В раскадровке луны их нет, поэтому они собраны по
+             солнышку: ромбики ложатся одним сдвигом (проверено по искрам —
+             оба глаза сходятся), а остальные три подогнаны под её посадку -->
+        <g class="eyes eyes-wide">
+          <rect x="69.0" y="76.0" width="13.5" height="15.7" rx="6.75" fill="#000"/>
+          <rect x="92.0" y="80.7" width="13.5" height="15.7" rx="6.75" fill="#000"/>
+        </g>
+        <g class="eyes eyes-squint">
+          <rect x="69.5" y="79.0" width="12.5" height="9.5" rx="4.75" fill="#000"/>
+          <rect x="92.5" y="83.7" width="12.5" height="9.5" rx="4.75" fill="#000"/>
+        </g>
+        <g class="eyes eyes-dash">
+          <rect x="67.0" y="79.0" width="17.5" height="10.3" rx="5" fill="#000"/>
+          <rect x="90.0" y="83.7" width="17.5" height="10.3" rx="5" fill="#000"/>
+        </g>
+        <!-- звёздочки: контур солнышка, поставленный в посадку искр луны -->
+        <g class="eyes eyes-stars">
+          <path transform="translate(64.135,77.349)" fill="#000" d="STAR_EYE"/>
+          <path transform="translate(95.195,84.069)" fill="#000" d="STAR_EYE"/>
+        </g>
+        <g class="eyes eyes-gem">
+          <g transform="translate(42.375,43.943)">
+            <path fill="#000" fill-rule="evenodd" d="GEM_PATH"/>
+          </g>
+        </g>
+
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#moonMask)">
+    <path fill="url(#gMoon)" d="MOON_PATH"/>
+  </g>
+</svg>
